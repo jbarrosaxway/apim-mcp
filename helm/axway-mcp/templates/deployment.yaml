@@ -1,0 +1,79 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "axway-mcp.fullname" . }}
+  labels:
+    {{- include "axway-mcp.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "axway-mcp.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "axway-mcp.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "axway-mcp.serviceAccountName" . }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.targetPort }}
+              protocol: TCP
+          env:
+            - name: TRANSPORT_MODE
+              value: {{ .Values.env.TRANSPORT_MODE | quote }}
+            - name: PORT
+              value: {{ .Values.env.PORT | quote }}
+            - name: TZ
+              value: {{ .Values.env.TZ | quote }}
+            - name: AXWAY_GATEWAY_URL
+              value: {{ .Values.env.AXWAY_GATEWAY_URL | quote }}
+            - name: AXWAY_GATEWAY_USERNAME
+              value: {{ .Values.env.AXWAY_GATEWAY_USERNAME | quote }}
+            - name: AXWAY_MANAGER_URL
+              value: {{ .Values.env.AXWAY_MANAGER_URL | quote }}
+            - name: AXWAY_MANAGER_USERNAME
+              value: {{ .Values.env.AXWAY_MANAGER_USERNAME | quote }}
+
+            {{- if and .Values.secrets.name .Values.secrets.gatewayPasswordKey }}
+            - name: AXWAY_GATEWAY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.name }}
+                  key: {{ .Values.secrets.gatewayPasswordKey }}
+            {{- else }}
+            - name: AXWAY_GATEWAY_PASSWORD
+              value: {{ .Values.env.AXWAY_GATEWAY_PASSWORD | quote }}
+            {{- end }}
+
+            {{- if and .Values.secrets.name .Values.secrets.managerPasswordKey }}
+            - name: AXWAY_MANAGER_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.name }}
+                  key: {{ .Values.secrets.managerPasswordKey }}
+            {{- else }}
+            - name: AXWAY_MANAGER_PASSWORD
+              value: {{ .Values.env.AXWAY_MANAGER_PASSWORD | quote }}
+            {{- end }}
+
+          {{- if .Values.probes.liveness.enabled }}
+          livenessProbe:
+            tcpSocket:
+              port: {{ .Values.service.targetPort }}
+            initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
+          {{- end }}
+          {{- if .Values.probes.readiness.enabled }}
+          readinessProbe:
+            tcpSocket:
+              port: {{ .Values.service.targetPort }}
+            initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
+            periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
+          {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }} 

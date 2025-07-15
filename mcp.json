@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "axway-mcp": {
+      "version": "1.0.0",
+      "description": "An MCP server with tools for managing and analyzing Axway API Gateway and API Manager environments.",
+      "author": "jbarros",
+      "startCommand": [
+        "node",
+        "./build/index.js"
+      ],
+      "workingDirectory": "."
+    }
+  }
+} 

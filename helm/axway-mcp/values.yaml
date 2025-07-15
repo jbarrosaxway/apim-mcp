@@ -1,0 +1,86 @@
+# Default values for axway-mcp chart.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  # Substitua pelo nome do seu repositório de imagem Docker
+  repository: axwayjbarros/apim-mcp
+  pullPolicy: IfNotPresent
+  # Substitua isto pela tag específica da imagem que pretende usar para o deploy.
+  # Ex: '1.0.0'
+  tag: "1.0.11"
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Especifica se uma service account deve ser criada
+  create: true
+  # Anotações para adicionar à service account
+  annotations: {}
+  # O nome da service account a usar.
+  # Se não for definido e create for true, um nome completo será gerado.
+  name: ""
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+
+# Variáveis de ambiente para a aplicação.
+# Preencha os valores abaixo com as suas credenciais e URLs do ambiente Axway.
+env:
+  TRANSPORT_MODE: "http"
+  PORT: "3000"
+  TZ: "UTC" # Ex: America/Sao_Paulo, Europe/Lisbon
+
+  # Credenciais do API Gateway
+  AXWAY_GATEWAY_URL: ""
+  AXWAY_GATEWAY_USERNAME: ""
+  AXWAY_GATEWAY_PASSWORD: ""
+
+  # Credenciais do API Manager
+  AXWAY_MANAGER_URL: ""
+  AXWAY_MANAGER_USERNAME: ""
+  AXWAY_MANAGER_PASSWORD: ""
+
+# Em vez de colocar as senhas diretamente acima, pode referenciar um Segredo do Kubernetes.
+# Se preencher os campos abaixo, as senhas acima serão ignoradas.
+secrets:
+  # O nome do Segredo do Kubernetes que contém as senhas.
+  name: ""
+  # A chave dentro do Segredo que contém a senha do Gateway.
+  gatewayPasswordKey: ""
+  # A chave dentro do Segredo que contém a senha do Manager.
+  managerPasswordKey: ""
+
+# Recursos de CPU/Memória para o pod.
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+# Liveness e Readiness probes para verificar a saúde do container.
+probes:
+  liveness:
+    enabled: true
+    tcpSocket:
+      port: 3000
+    initialDelaySeconds: 15
+    periodSeconds: 20
+  readiness:
+    enabled: true
+    tcpSocket:
+      port: 3000
+    initialDelaySeconds: 5
+    periodSeconds: 10 

@@ -1,0 +1,15 @@
+apiVersion: v2
+name: axway-mcp
+description: A Helm chart for deploying the Axway MCP Server
+type: application
+
+# Esta é a versão do chart. Incremente esta versão quando fizer alterações ao chart.
+version: 0.1.0
+
+# Esta é a versão da aplicação que este chart está a fazer o deploy.
+# É uma boa prática alinhar esta versão com a versão da sua imagem Docker.
+appVersion: "1.0.0"
+
+maintainers:
+  - name: Joao Barros
+    email: your-email@example.com

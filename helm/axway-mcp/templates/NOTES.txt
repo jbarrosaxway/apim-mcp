@@ -1,0 +1,20 @@
+{{- /*
+Este template gera as notas que são exibidas após uma instalação bem-sucedida do chart.
+*/ -}}
+{{- define "axway-mcp.notes" -}}
+O seu deployment do Axway APIM MCP Server foi iniciado.
+
+Para aceder ao servidor a partir do seu ambiente local, pode usar o port-forwarding do kubectl.
+Execute o seguinte comando num terminal separado:
+
+  export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "axway-mcp.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
+  echo "A fazer port-forward para o pod ${POD_NAME} na porta 3000..."
+  kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 3000:{{ .Values.service.targetPort }}
+
+Agora, pode configurar o seu cliente MCP para se conectar a:
+http://localhost:3000/mcp/
+
+{{- end -}}
+{{- .Values.notes | nindent 0 |ശം.Release.Name }}
+{{- end -}}
+{{- .Values.notes | nindent 0 | trimSuffix "\n" -}} 

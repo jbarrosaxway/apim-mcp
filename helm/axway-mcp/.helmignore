@@ -1,0 +1,19 @@
+# Patterns to ignore when packaging Helm charts.
+# This values file is used for development and testing purposes.
+# It should not be included in the chart package.
+*.swp
+*.swo
+.DS_Store
+.git/
+.gitignore
+.project
+.settings
+.vagrant/
+build/
+dist/
+node_modules/
+npm-debug.log
+secrets.yaml
+values.dev.yaml
+helm/
+ci/ 

@@ -1,0 +1,42 @@
+{
+  "name": "axway-mcp-server",
+  "version": "1.0.14",
+  "description": "An MCP server with tools for managing and analyzing Axway API Gateway and API Manager environments.",
+  "main": "build/index.js",
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node build/index.js",
+    "dev": "tsc && node build/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "mcp",
+    "axway"
+  ],
+  "author": "",
+  "license": "ISC",
+  "typesVersions": {
+    "*": {
+      "*": [
+        "./dist/index.d.ts",
+        "./dist/*"
+      ]
+    }
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.15.0",
+    "@types/form-data": "^2.2.1",
+    "@types/formidable": "^3.4.5",
+    "axios": "^1.7.2",
+    "commander": "^12.1.0",
+    "dotenv": "^17.1.0",
+    "form-data": "^4.0.3",
+    "formidable": "^3.5.4",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.12.12",
+    "typescript": "^5.4.5"
+  }
+}

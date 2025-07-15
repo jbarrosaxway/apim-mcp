@@ -1,0 +1,28 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug MCP Local Server",
+      "program": "${workspaceFolder}/build/index.js",
+      "outFiles": [
+        "${workspaceFolder}/build/**/*.js"
+      ],
+      "console": "integratedTerminal",
+      "env": {
+        "TRANSPORT_MODE": "http",
+        "AXWAY_GATEWAY_URL": "https://anm.digio.demo-latam.axway.com/api",
+        "AXWAY_GATEWAY_USERNAME": "admin",
+        "AXWAY_GATEWAY_PASSWORD": "changeme",
+        "AXWAY_MANAGER_URL": "https://apimgr.digio.demo-latam.axway.com/api/portal/v1.4",
+        "AXWAY_MANAGER_USERNAME": "apiadmin",
+        "AXWAY_MANAGER_PASSWORD": "chagneme1",
+        "TZ": "America/Sao_Paulo"
+      }
+    }
+  ]
+} 

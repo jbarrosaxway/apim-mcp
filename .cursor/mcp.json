@@ -1,0 +1,8 @@
+{
+  "mcpServers": {
+    "Axway MCP - stdio": {
+      "command": "node",
+      "args": ["build/index.js"]
+    }
+  }
+}
