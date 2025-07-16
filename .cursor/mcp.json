@@ -1,8 +1,17 @@
 {
   "mcpServers": {
-    "Axway MCP - stdio": {
-      "command": "node",
-      "args": ["build/index.js"]
+    "Axway MCP - stdio": { 
+      "command": "node",  
+      "args": ["build/index.js"],
+      "env": {
+        "TRANSPORT_MODE": "stdio",
+        "AXWAY_GATEWAY_URL": "https://seu-gateway:8090/api",
+        "AXWAY_GATEWAY_USERNAME": "admin",
+        "AXWAY_GATEWAY_PASSWORD": "sua_senha",
+        "AXWAY_MANAGER_URL": "https://seu-manager:8075/api/portal/v1.4",
+        "AXWAY_MANAGER_USERNAME": "apiadmin",
+        "AXWAY_MANAGER_PASSWORD": "sua_senha"
+      }
     }
   }
 }
