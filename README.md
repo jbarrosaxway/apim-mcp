@@ -129,13 +129,27 @@ A tabela abaixo detalha todas as variáveis de ambiente necessárias para que o 
 | `AXWAY_MANAGER_URL` | URL da API do Portal do API Manager. | Sim | `https://seu-manager:8075/api/portal/v1.4` |
 | `AXWAY_MANAGER_USERNAME` | Nome de usuário para o API Manager. | Sim | `apiadmin` |
 | `AXWAY_MANAGER_PASSWORD` | Senha para o usuário do API Manager. | Sim | `changeme` |
-| `TRANSPORT_MODE` | Define o modo de transporte. Deve ser `http`. | Sim | `http` |
+| `TRANSPORT_MODE` | Define o modo de transporte. Pode ser `http` (padrão) ou `stdio`. | Não | `http` |
 | `TZ` | Fuso horário (IANA) para o contêiner. | Não | `America/Sao_Paulo` |
 
 #### Exemplos de Fuso Horário (`TZ`)
 *   **Américas:** `America/Sao_Paulo`, `America/New_York`, `America/Los_Angeles`
 *   **Europa:** `Europe/Lisbon`, `Europe/London`, `Europe/Paris`, `Europe/Berlin`
 *   **Padrão (se não for fornecido):** `UTC`
+
+### Modos de Transporte
+
+O servidor MCP suporta dois modos de transporte:
+
+#### 1. Modo HTTP (Padrão)
+- **Descrição:** Comunicação via HTTP com Server-Sent Events (SSE)
+- **Uso:** Ideal para integração com clientes web e aplicações que precisam de múltiplas sessões
+- **Ativação:** Padrão ou definindo `MCP_TRANSPORT=http`
+
+#### 2. Modo STDIO
+- **Descrição:** Comunicação direta via stdin/stdout
+- **Uso:** Ideal para integração direta com LLMs locais ou ferramentas de linha de comando
+- **Ativação:** Definindo `TRANSPORT_MODE=stdio` ou usando argumentos `--stdio` ou `-s`
 
 ### Como Construir e Executar
 
@@ -151,11 +165,28 @@ A tabela abaixo detalha todas as variáveis de ambiente necessárias para que o 
     Este é um exemplo completo de comando para executar o servidor em modo "detached" (`-d`), com reinício automático (`--restart unless-stopped`) e com todas as variáveis de ambiente configuradas.
     
     ```bash
+    # Modo HTTP (padrão)
     docker run -d \
       -p 8080:3000 \
       --restart unless-stopped \
       --name axway-mcp-server \
       -e TRANSPORT_MODE="http" \
+      -e AXWAY_GATEWAY_URL="https://seu-gateway:8090/api" \
+      -e AXWAY_GATEWAY_USERNAME="admin" \
+      -e AXWAY_GATEWAY_PASSWORD="sua_senha_aqui" \
+      -e AXWAY_MANAGER_URL="https://seu-manager:8075/api/portal/v1.4" \
+      -e AXWAY_MANAGER_USERNAME="apiadmin" \
+      -e AXWAY_MANAGER_PASSWORD="sua_senha_aqui" \
+      -e TZ="America/Sao_Paulo" \
+      axwayjbarros/apim-mcp:1.0.11
+    ```
+
+    ```bash
+    # Modo STDIO (para integração direta com LLMs)
+    docker run -d \
+      --restart unless-stopped \
+      --name axway-mcp-server-stdio \
+      -e TRANSPORT_MODE="stdio" \
       -e AXWAY_GATEWAY_URL="https://seu-gateway:8090/api" \
       -e AXWAY_GATEWAY_USERNAME="admin" \
       -e AXWAY_GATEWAY_PASSWORD="sua_senha_aqui" \

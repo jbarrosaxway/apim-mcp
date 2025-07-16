@@ -5,14 +5,16 @@
  * Este arquivo é responsável por:
  * 1. Inicializar e configurar o servidor MCP usando o SDK `@modelcontextprotocol/sdk`.
  * 2. Gerenciar sessões e transportes HTTP, incluindo Server-Sent Events (SSE) para comunicação em tempo real.
- * 3. Importar todas as operações (ferramentas) dos arquivos no diretório `src/operations`.
- * 4. Registrar cada ferramenta no servidor MCP, mapeando a definição da ferramenta (de `src/tools.ts`)
+ * 3. Suportar transporte stdio para comunicação direta via stdin/stdout.
+ * 4. Importar todas as operações (ferramentas) dos arquivos no diretório `src/operations`.
+ * 5. Registrar cada ferramenta no servidor MCP, mapeando a definição da ferramenta (de `src/tools.ts`)
  *    para sua implementação real.
- * 5. Iniciar o servidor HTTP para escutar as requisições do cliente (ex: um modelo de linguagem).
+ * 6. Iniciar o servidor HTTP para escutar as requisições do cliente (ex: um modelo de linguagem).
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createServer, IncomingMessage, ServerResponse } from "node:http";
 import { RequestHandlerExtra } from "@modelcontextprotocol/sdk/shared/protocol.js";
 import { randomUUID } from "crypto";
@@ -50,23 +52,30 @@ const SESSION_ID_HEADER_NAME = "mcp-session-id";
  * Estende a classe base `McpServer` para incluir:
  * - Uma instância da `AxwayApi` para comunicação com a plataforma Axway.
  * - Gerenciamento de múltiplos transportes HTTP, um para cada sessão de cliente.
+ * - Suporte a transporte stdio para comunicação direta via stdin/stdout.
  */
 class AxwayMcpServer extends McpServer {
   private api: AxwayApi;
   public transports: { [sessionId: string]: StreamableHTTPServerTransport } = {};
   private sessionTimestamps: { [sessionId: string]: number } = {};
+  private transportMode: 'http' | 'stdio' = 'http';
 
-  constructor() {
+  constructor(transportMode: 'http' | 'stdio' = 'http') {
     super({
       name: "axway-mcp",
       version: "1.0.0",
       description: "Ferramentas para gerenciar e analisar configurações e tráfego do Axway API Gateway"
     });
     this.api = new AxwayApi();
+    this.transportMode = transportMode;
     this.registerTools();
-    setInterval(() => {
-      this.cleanupOldSessions();
-    }, 5 * 60 * 1000);
+    
+    // Apenas configurar limpeza de sessões se estiver no modo HTTP
+    if (this.transportMode === 'http') {
+      setInterval(() => {
+        this.cleanupOldSessions();
+      }, 5 * 60 * 1000);
+    }
   }
 
   private cleanupOldSessions() {
@@ -405,23 +414,53 @@ class AxwayMcpServer extends McpServer {
 
 /**
  * Função principal que inicializa e inicia o servidor.
+ * Detecta automaticamente se deve usar transporte stdio ou HTTP baseado no ambiente.
  */
 async function main() {
-  const server = new AxwayMcpServer();
-  const port = process.env.PORT || 3000;
+  // Detectar o modo de transporte baseado em variáveis de ambiente ou argumentos
+  const useStdio = process.env.TRANSPORT_MODE === 'stdio' || 
+                   process.argv.includes('--stdio') || 
+                   process.argv.includes('-s');
   
-  const httpServer = createServer((req, res) => {
-    server.handleRequest(req, res).catch(err => {
-      console.error("Error handling request:", err);
-      if (!res.writableEnded) {
-        res.writeHead(500).end("Internal Server Error");
-      }
+  const transportMode = useStdio ? 'stdio' : 'http';
+  const server = new AxwayMcpServer(transportMode);
+  
+  if (transportMode === 'stdio') {
+    // Modo stdio: comunicação direta via stdin/stdout
+    console.error('Axway MCP Server iniciado em modo stdio');
+    const stdioTransport = new StdioServerTransport();
+    
+    stdioTransport.onclose = () => {
+      console.error('Conexão stdio fechada');
+      process.exit(0);
+    };
+    
+    stdioTransport.onerror = (error) => {
+      console.error('Erro na conexão stdio:', error);
+      process.exit(1);
+    };
+    
+    // connect() já chama start() automaticamente
+    await server.connect(stdioTransport);
+    
+    console.error('Axway MCP Server pronto para comunicação via stdio');
+  } else {
+    // Modo HTTP: servidor web com StreamableHTTP
+    const port = process.env.PORT || 3000;
+    
+    const httpServer = createServer((req, res) => {
+      server.handleRequest(req, res).catch(err => {
+        console.error("Error handling request:", err);
+        if (!res.writableEnded) {
+          res.writeHead(500).end("Internal Server Error");
+        }
+      });
     });
-  });
 
-  httpServer.listen({ port: port, host: '0.0.0.0' }, () => {
-    console.log(`Axway MCP Server is running on http://0.0.0.0:${port}`);
-  });
+    httpServer.listen({ port: port, host: '0.0.0.0' }, () => {
+      console.log(`Axway MCP Server is running on http://0.0.0.0:${port}`);
+    });
+  }
 }
 
 main().catch(console.error);

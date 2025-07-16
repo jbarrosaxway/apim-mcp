@@ -7,7 +7,11 @@
   "scripts": {
     "build": "tsc",
     "start": "node build/index.js",
+    "start:http": "node build/index.js",
+    "start:stdio": "TRANSPORT_MODE=stdio node build/index.js",
     "dev": "tsc && node build/index.js",
+    "dev:http": "tsc && node build/index.js",
+    "dev:stdio": "tsc && TRANSPORT_MODE=stdio node build/index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
