@@ -224,7 +224,7 @@ const getApplication = {
 
 const getApiKeysForApplication = {
   method: "get_api_keys_for_application",
-  description: "Obtém as API Keys associadas a uma aplicação específica.",
+  description: "Obtém as API Keys associadas a uma aplicação específica. IMPORTANTE: Use o campo 'apiKey' para autenticação em chamadas curl, NÃO use o campo 'secret'.",
   parameters: z.object({
     id: z.string().describe("O ID da aplicação cujas API Keys devem ser retornadas.")
   }).shape
@@ -274,9 +274,17 @@ const listApiProxies = {
 
 const getApiProxy = {
   method: "get_api_proxy",
-  description: "Obtém um proxy de API específico pelo seu ID. Use 'list_api_proxies' para encontrar IDs.",
+  description: "Obtém detalhes de um proxy de API específico, incluindo configurações de segurança e troubleshooting. IMPORTANTE: O campo 'authenticationInfo.fieldName' indica o nome correto do header para autenticação.",
   parameters: z.object({
     id: z.string().describe("O ID do proxy de API a ser recuperado.")
+  }).shape
+};
+
+const getProxyAuthenticationInfo = {
+  method: "get_proxy_authentication_info",
+  description: "Obtém informações específicas de autenticação de um proxy de API, incluindo o nome correto do header e exemplos de uso para curl.",
+  parameters: z.object({
+    id: z.string().describe("O ID do proxy de API para obter informações de autenticação.")
   }).shape
 };
 
@@ -481,8 +489,9 @@ export function tools() {
     createOAuthCredential,
     getPermissionsForApplication,
     listApiProxies,
-    getApiProxy,
-    createApiProxy,
+      getApiProxy,
+  getProxyAuthenticationInfo,
+  createApiProxy,
     updateApiProxy,
     deleteApiProxy,
     publishApi,

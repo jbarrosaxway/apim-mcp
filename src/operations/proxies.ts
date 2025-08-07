@@ -19,6 +19,19 @@ function transformApiProxyForTroubleshooting(rawProxy: any): any {
   const authProfile = rawProxy.authenticationProfiles?.find((p: any) => p.isDefault);
   const corsProfile = rawProxy.corsProfiles?.find((p: any) => p.isDefault);
 
+  // Extrair informações de autenticação das configurações de segurança
+  const authDevices = securityProfile?.devices || [];
+  const apiKeyDevice = authDevices.find((d: any) => d.type === 'apiKey');
+  const oauthDevice = authDevices.find((d: any) => d.type === 'oauth');
+  
+  // Determinar o nome do campo de autenticação baseado nas configurações
+  let authFieldName = "X-API-Key"; // Padrão
+  if (apiKeyDevice?.properties?.headerName) {
+    authFieldName = apiKeyDevice.properties.headerName;
+  } else if (oauthDevice?.properties?.headerName) {
+    authFieldName = oauthDevice.properties.headerName;
+  }
+
   const simplified = {
     id: rawProxy.id,
     name: rawProxy.name,
@@ -28,12 +41,19 @@ function transformApiProxyForTroubleshooting(rawProxy: any): any {
     apiId: rawProxy.apiId,
     createdOn: rawProxy.createdOn,
     accessGrantedDate: rawProxy.accessGrantedDate,
-    securityProfiles: rawProxy.securityProfiles, // Adicionando o campo crucial
+    securityProfiles: rawProxy.securityProfiles,
+    authenticationInfo: {
+      fieldName: authFieldName, // ✅ NOME DO CAMPO para usar em headers
+      authType: apiKeyDevice ? 'apiKey' : oauthDevice ? 'oauth' : 'none',
+      curlExample: `curl -H "${authFieldName}: YOUR_API_KEY" https://your-api-endpoint`,
+      warning: "Consulte as configurações de segurança do proxy para o nome correto do campo"
+    },
     troubleshootingInfo: {
       inbound: {
         security: securityProfile?.devices?.map((d: any) => ({
           type: d.type,
-          scopes: d.properties?.scopes
+          scopes: d.properties?.scopes,
+          headerName: d.properties?.headerName // Nome do campo de autenticação
         })),
         cors: {
           origins: corsProfile?.origins
@@ -89,6 +109,70 @@ export async function listApiProxies(api: AxwayApi) {
     };
   } catch (error) {
     console.error(`Erro ao listar proxies de API:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Ferramenta para obter informações específicas de autenticação de um proxy de API.
+ * @param api Instância da classe AxwayApi.
+ * @param id O ID do proxy de API.
+ * @returns Um objeto contendo informações de autenticação do proxy.
+ */
+export async function getProxyAuthenticationInfo(api: AxwayApi, id: string) {
+  try {
+    const rawProxy = await api.getApiProxy(id);
+    const securityProfile = rawProxy.securityProfiles?.find((p: any) => p.isDefault);
+    const authDevices = securityProfile?.devices || [];
+    
+    // Extrair informações de autenticação
+    const apiKeyDevice = authDevices.find((d: any) => d.type === 'apiKey');
+    const oauthDevice = authDevices.find((d: any) => d.type === 'oauth');
+    
+    // Determinar o nome do campo de autenticação
+    let authFieldName = "X-API-Key"; // Padrão
+    let authType = "none";
+    
+    if (apiKeyDevice?.properties?.headerName) {
+      authFieldName = apiKeyDevice.properties.headerName;
+      authType = "apiKey";
+    } else if (oauthDevice?.properties?.headerName) {
+      authFieldName = oauthDevice.properties.headerName;
+      authType = "oauth";
+    }
+
+    return {
+      proxyId: id,
+      proxyName: rawProxy.name,
+      proxyPath: rawProxy.path,
+      authenticationInfo: {
+        type: authType,
+        fieldName: authFieldName,
+        curlExample: `curl -H "${authFieldName}: YOUR_API_KEY" https://your-api-endpoint`,
+        curlWithApiKey: `curl -H "${authFieldName}: YOUR_API_KEY" ${rawProxy.vhost}${rawProxy.path}`,
+        warning: "Use o campo 'apiKey' das credenciais, NÃO use o campo 'secret'",
+        securityDevices: authDevices.map((d: any) => ({
+          type: d.type,
+          headerName: d.properties?.headerName,
+          scopes: d.properties?.scopes
+        }))
+      },
+      message: `Informações de autenticação para o proxy '${rawProxy.name}'. Use o header '${authFieldName}' para autenticação.`,
+      relatedTools: [
+        {
+          tool_name: 'get_api_keys_for_application',
+          description: 'Obter API Keys para usar com este proxy.',
+          parameters: []
+        },
+        {
+          tool_name: 'get_api_proxy',
+          description: `Obter detalhes completos do proxy '${rawProxy.name}'.`,
+          parameters: [{ name: 'id', value: id }]
+        }
+      ]
+    };
+  } catch (error) {
+    console.error(`Erro ao obter informações de autenticação do proxy ${id}:`, error);
     throw error;
   }
 }

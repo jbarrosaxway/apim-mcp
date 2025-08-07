@@ -321,6 +321,9 @@ class AxwayMcpServer extends McpServer {
               case "get_api_proxy":
                 result = await proxies.getApiProxy(this.api, args.id);
                 break;
+              case "get_proxy_authentication_info":
+                result = await proxies.getProxyAuthenticationInfo(this.api, args.id);
+                break;
               case "create_api_proxy":
                 result = await proxies.createApiProxy(this.api, args.name, args.path, args.apiId, args.organizationId);
                 break;
