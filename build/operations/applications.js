@@ -31,12 +31,18 @@ function transformApplication(app) {
 function transformApiKey(key) {
     return {
         apiKeyId: key.id,
-        apiKey: key.apiKey,
-        secret: key.secret,
+        apiKey: key.apiKey, // ✅ USE ESTE CAMPO para autenticação em chamadas curl
+        secret: key.secret, // ⚠️ NÃO use este campo para autenticação
         isEnabled: key.enabled,
         isCorsEnabled: key.cors,
         metadata: {
             createdAt: new Date(key.createdOn).toISOString(),
+        },
+        // Informações importantes para uso correto
+        usageInfo: {
+            authenticationField: "apiKey", // Campo correto para usar em headers
+            curlExample: `curl -H "X-API-Key: ${key.apiKey}" https://your-api-endpoint`,
+            warning: "Use 'apiKey' para autenticação, NÃO use 'secret'"
         }
     };
 }

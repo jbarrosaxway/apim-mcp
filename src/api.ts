@@ -694,4 +694,32 @@ export class AxwayApi {
     const response = await this.apiManager.get(path);
     return response.data;
   }
+
+  /**
+   * Obtém a configuração do API Manager.
+   * Esta operação acessa o endpoint `/config` do API Manager para recuperar
+   * informações sobre a configuração do sistema, incluindo políticas globais,
+   * configurações de segurança, limites de sessão, etc.
+   *
+   * @returns Promise<any> - A configuração completa do API Manager
+   */
+  async getManagerConfig(): Promise<any> {
+    try {
+      const timestamp = Date.now();
+      const params = new URLSearchParams();
+      params.append('request.preventCache', timestamp.toString());
+
+      return await this.logAndRequest(this.apiManager, {
+        method: 'GET',
+        url: `/config?${params.toString()}`,
+        headers: {
+          'Accept': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      });
+    } catch (error) {
+      console.error('Error getting API Manager configuration:', error);
+      throw error;
+    }
+  }
 }

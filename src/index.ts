@@ -234,6 +234,9 @@ class AxwayMcpServer extends McpServer {
               case "get_mcp_server_time":
                 result = await system.getMcpServerTime();
                 break;
+              case "get_manager_config":
+                result = await system.getManagerConfig();
+                break;
               // topology.ts
               case "list_topology":
                 result = await topology.listTopology(this.api);

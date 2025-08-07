@@ -35,6 +35,12 @@ const getMcpServerTime = {
   parameters: z.object({}).shape
 };
 
+const getManagerConfig = {
+  method: "get_manager_config",
+  description: "Obtém a configuração do API Manager, incluindo políticas globais, configurações de segurança, limites de sessão e outras configurações do sistema.",
+  parameters: z.object({}).shape
+};
+
 const getInstanceTraffic = {
   method: "get_instance_traffic",
   description: "Obtém um resumo das métricas de tráfego para uma instância específica do API Gateway Axway. ATENÇÃO: Em ambientes containerizados (Kubernetes, Docker, etc), o instanceId pode mudar a cada reinício de pod. Sempre consulte a topologia (tool list_topology) antes de usar um instanceId.",
@@ -464,6 +470,7 @@ export function tools() {
   return [
     listTopology,
     getMcpServerTime,
+    getManagerConfig,
     getInstanceTraffic,
     getServiceTraffic,
     getInstanceMetricsTimeline,

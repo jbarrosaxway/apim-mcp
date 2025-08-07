@@ -31,6 +31,11 @@ const getMcpServerTime = {
     description: "Obtém o timestamp e o fuso horário atuais do servidor onde o MCP está sendo executado. Fornece uma referência de tempo confiável.",
     parameters: z.object({}).shape
 };
+const getManagerConfig = {
+    method: "get_manager_config",
+    description: "Obtém a configuração do API Manager, incluindo políticas globais, configurações de segurança, limites de sessão e outras configurações do sistema.",
+    parameters: z.object({}).shape
+};
 const getInstanceTraffic = {
     method: "get_instance_traffic",
     description: "Obtém um resumo das métricas de tráfego para uma instância específica do API Gateway Axway. ATENÇÃO: Em ambientes containerizados (Kubernetes, Docker, etc), o instanceId pode mudar a cada reinício de pod. Sempre consulte a topologia (tool list_topology) antes de usar um instanceId.",
@@ -201,7 +206,7 @@ const getApplication = {
 };
 const getApiKeysForApplication = {
     method: "get_api_keys_for_application",
-    description: "Obtém as API Keys associadas a uma aplicação específica.",
+    description: "Obtém as API Keys associadas a uma aplicação específica. IMPORTANTE: Use o campo 'apiKey' para autenticação em chamadas curl, NÃO use o campo 'secret'.",
     parameters: z.object({
         id: z.string().describe("O ID da aplicação cujas API Keys devem ser retornadas.")
     }).shape
@@ -245,9 +250,16 @@ const listApiProxies = {
 };
 const getApiProxy = {
     method: "get_api_proxy",
-    description: "Obtém um proxy de API específico pelo seu ID. Use 'list_api_proxies' para encontrar IDs.",
+    description: "Obtém detalhes de um proxy de API específico, incluindo configurações de segurança e troubleshooting. IMPORTANTE: O campo 'authenticationInfo.fieldName' indica o nome correto do header para autenticação.",
     parameters: z.object({
         id: z.string().describe("O ID do proxy de API a ser recuperado.")
+    }).shape
+};
+const getProxyAuthenticationInfo = {
+    method: "get_proxy_authentication_info",
+    description: "Obtém informações específicas de autenticação de um proxy de API, incluindo o nome correto do header e exemplos de uso para curl.",
+    parameters: z.object({
+        id: z.string().describe("O ID do proxy de API para obter informações de autenticação.")
     }).shape
 };
 const createApiProxy = {
@@ -407,6 +419,7 @@ export function tools() {
     return [
         listTopology,
         getMcpServerTime,
+        getManagerConfig,
         getInstanceTraffic,
         getServiceTraffic,
         getInstanceMetricsTimeline,
@@ -433,6 +446,7 @@ export function tools() {
         getPermissionsForApplication,
         listApiProxies,
         getApiProxy,
+        getProxyAuthenticationInfo,
         createApiProxy,
         updateApiProxy,
         deleteApiProxy,
