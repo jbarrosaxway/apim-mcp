@@ -709,7 +709,7 @@ export class AxwayApi {
       const params = new URLSearchParams();
       params.append('request.preventCache', timestamp.toString());
 
-      return await this.logAndRequest(this.apiManager, {
+      const response = await this.logAndRequest(this.apiManager, {
         method: 'GET',
         url: `/config?${params.toString()}`,
         headers: {
@@ -717,6 +717,9 @@ export class AxwayApi {
           'X-Requested-With': 'XMLHttpRequest'
         }
       });
+      
+      // Retornar apenas os dados da resposta, não o objeto response completo
+      return response.data;
     } catch (error) {
       console.error('Error getting API Manager configuration:', error);
       throw error;
