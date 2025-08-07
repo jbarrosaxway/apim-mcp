@@ -403,7 +403,29 @@ class AxwayMcpServer extends McpServer {
             };
           } catch (error: any) {
             console.error(`Error executing tool '${tool.method}':`, error);
-            const errorMessage = error.response?.data?.errors?.[0]?.message || error.message || "An unknown error occurred.";
+            
+            // Função para extrair informações seguras do erro sem referências circulares
+            const getSafeErrorMessage = (err: any): string => {
+              if (err?.response?.data?.errors?.[0]?.message) {
+                return err.response.data.errors[0].message;
+              }
+              if (err?.response?.data?.message) {
+                return err.response.data.message;
+              }
+              if (err?.response?.statusText) {
+                return `${err.response.status} ${err.response.statusText}`;
+              }
+              if (err?.message) {
+                return err.message;
+              }
+              if (err?.code) {
+                return `Error code: ${err.code}`;
+              }
+              return "An unknown error occurred.";
+            };
+            
+            const errorMessage = getSafeErrorMessage(error);
+            
             // Retornar um erro estruturado para o LLM
             return {
               content: [{
