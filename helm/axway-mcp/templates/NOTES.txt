@@ -1,20 +1,18 @@
-{{- /*
-Este template gera as notas que são exibidas após uma instalação bem-sucedida do chart.
-*/ -}}
-{{- define "axway-mcp.notes" -}}
-O seu deployment do Axway APIM MCP Server foi iniciado.
+1. Get the application URL by running these commands:
 
-Para aceder ao servidor a partir do seu ambiente local, pode usar o port-forwarding do kubectl.
-Execute o seguinte comando num terminal separado:
-
+{{- if contains "NodePort" .Values.service.type }}
+  export NODE_PORT=$(kubectl get --namespace {{ .Release.Namespace }} -o jsonpath="{.spec.ports[0].nodePort}" services {{ include "axway-mcp.fullname" . }})
+  export NODE_IP=$(kubectl get nodes --namespace {{ .Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}")
+  echo http://$NODE_IP:$NODE_PORT
+{{- else if contains "LoadBalancer" .Values.service.type }}
+  NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+  kubectl get --namespace {{ .Release.Namespace }} svc {{ include "axway-mcp.fullname" . }} -w
+{{- else if contains "ClusterIP" .Values.service.type }}
   export POD_NAME=$(kubectl get pods --namespace {{ .Release.Namespace }} -l "app.kubernetes.io/name={{ include "axway-mcp.name" . }},app.kubernetes.io/instance={{ .Release.Name }}" -o jsonpath="{.items[0].metadata.name}")
-  echo "A fazer port-forward para o pod ${POD_NAME} na porta 3000..."
-  kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 3000:{{ .Values.service.targetPort }}
+  echo "Visit http://127.0.0.1:3000 via:"
+  echo "kubectl --namespace {{ .Release.Namespace }} port-forward $POD_NAME 3000:{{ .Values.service.targetPort }}"
+{{- end }}
 
-Agora, pode configurar o seu cliente MCP para se conectar a:
-http://localhost:3000/mcp/
-
-{{- end -}}
-{{- .Values.notes | nindent 0 |ശം.Release.Name }}
-{{- end -}}
-{{- .Values.notes | nindent 0 | trimSuffix "\n" -}} 
+2. MCP auth (when MCP_AUTH_MODE=oidc):
+  - Protected Resource Metadata: GET /.well-known/oauth-protected-resource
+  - MCP requests require Authorization: Bearer <JWT>

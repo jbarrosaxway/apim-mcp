@@ -2,6 +2,9 @@
 
 Bem-vindo à documentação do **Axway APIM MCP**. Este documento explica o que é um "MCP", como este projeto específico funciona, e como um modelo de linguagem (LLM) como eu o utiliza para interagir com o seu ambiente Axway API Management.
 
+**Instalar, configurar e autenticar (fim a fim):** [docs/guia-fim-a-fim.md](docs/guia-fim-a-fim.md)  
+**Outros Identity Providers OIDC:** [docs/oidc-idps.md](docs/oidc-idps.md)
+
 ## 1. O que é um MCP? (Para Leigos)
 
 Imagine que um Modelo de Linguagem (LLM) é um **Chef de Cozinha** genial. Ele sabe milhares de receitas e pode criar pratos incríveis, mas está "preso" dentro da cozinha. Ele não pode ir ao mercado comprar ingredientes.
@@ -131,6 +134,87 @@ A tabela abaixo detalha todas as variáveis de ambiente necessárias para que o 
 | `AXWAY_MANAGER_PASSWORD` | Senha para o usuário do API Manager. | Sim | `changeme` |
 | `TRANSPORT_MODE` | Define o modo de transporte. Pode ser `http` (padrão) ou `stdio`. | Não | `http` |
 | `TZ` | Fuso horário (IANA) para o contêiner. | Não | `America/Sao_Paulo` |
+| `AXWAY_TLS_REJECT_UNAUTHORIZED` | Se `true`, valida certificados TLS do Axway. Default `false` (cert autoassinado). | Não | `false` |
+| `AXWAY_TLS_INSECURE` | Atalho: `true` força `rejectUnauthorized=false`. | Não | `false` |
+| `MCP_AUTH_MODE` | Auth do transporte HTTP: `none` (default) ou `oidc`. Ignorado em stdio. | Não | `oidc` |
+| `OIDC_ISSUER` | Issuer OIDC (sem barra final). Obrigatório se `MCP_AUTH_MODE=oidc`. | Condicional | `https://idp.example.com/realms/apim-mcp` |
+| `OIDC_AUDIENCE` | Audience esperado no access token JWT. | Condicional | `apim-mcp-api` |
+| `MCP_RESOURCE_URL` | URL canónica deste MCP (RFC 9728 / resource indicator). | Condicional | `https://mcp.example.com` |
+| `MCP_REQUIRED_SCOPES` | Scopes obrigatórios (espaço ou vírgula). | Não | `mcp:tools` |
+| `OIDC_JWKS_URI` | JWKS explícito; se omitido, usa discovery do issuer. | Não | *(vazio)* |
+
+#### TLS para o Axway
+
+A instalação padrão do Axway costuma usar certificado autoassinado. Por isso o default é **não** rejeitar certificados inválidos (`AXWAY_TLS_REJECT_UNAUTHORIZED=false`). Em produção com CA válida, defina `AXWAY_TLS_REJECT_UNAUTHORIZED=true`.
+
+#### Auth HTTP (OAuth 2.1 / OIDC genérico)
+
+No modo **HTTP**, o MCP actua como **OAuth 2.1 Resource Server** (não abre browser). O **cliente MCP** (ex.: Cursor remoto) faz Authorization Code + PKCE no IdP e envia `Authorization: Bearer <JWT>`.
+
+Guia para adicionar **Keycloak, Entra ID, Okta, Auth0** ou qualquer outro IdP OIDC: [docs/oidc-idps.md](docs/oidc-idps.md).
+
+Fluxo resumido:
+
+1. Cliente chama o MCP sem token → `401` + `WWW-Authenticate` com `resource_metadata`.
+2. Cliente lê `GET /.well-known/oauth-protected-resource` (RFC 9728).
+3. Cliente autentica no Authorization Server (OIDC) e obtém um access token.
+4. Pedidos seguintes incluem o Bearer JWT; o MCP valida assinatura (JWKS), `iss`, `aud` e scopes.
+
+O modo **stdio** continua sem OAuth (processo local).
+
+```bash
+# Exemplo HTTP + OIDC
+export MCP_AUTH_MODE=oidc
+export OIDC_ISSUER=https://idp.example.com/realms/apim-mcp
+export OIDC_AUDIENCE=apim-mcp-api
+export MCP_RESOURCE_URL=http://seu-mcp-host
+export MCP_REQUIRED_SCOPES=mcp:tools
+```
+
+#### Runbook Keycloak (exemplo)
+
+IdP de exemplo: `https://idp.example.com/`
+
+Objectos tipicos no realm **`apim-mcp`** (via Admin API / script `scripts/setup-keycloak-apim-mcp.ps1`):
+
+| Objecto | Nome | Notas |
+| :--- | :--- | :--- |
+| Realm | `apim-mcp` | Isolado do realm `master` |
+| Client scope | `mcp:tools` | Incluído no token; mapper de audience |
+| Client (audience) | `apim-mcp-api` | Valor de `aud` validado pelo MCP (`OIDC_AUDIENCE`) |
+| Client público | `mcp-cursor` | Auth Code + PKCE (browser no cliente MCP) |
+| Client confidential | `mcp-test-cli` | Smoke tests (direct access grants **só lab**) |
+| User de teste | `mcp-tester` | Login no Cursor / browser do IdP |
+
+**Credenciais OIDC de exemplo (substituir pelos valores reais do teu IdP):**
+
+| Campo | Valor de exemplo |
+| :--- | :--- |
+| Realm | `apim-mcp` |
+| Username | `mcp-tester` |
+| Password | `replace-me` |
+| Client Cursor (público) | `mcp-cursor` |
+| Client smoke (confidential) | `mcp-test-cli` / secret `replace-me-client-secret` |
+
+> Nunca commits passwords reais. Em lab, gera e guarda fora do git.
+
+Provisionar / re-sincronizar (password admin via parâmetro ou `KC_ADMIN_PASSWORD`, **nunca** no git):
+
+```powershell
+powershell -File scripts/setup-keycloak-apim-mcp.ps1 -AdminPassword '<admin>'
+```
+
+Smoke token (lab):
+
+```bash
+curl -s -X POST 'https://idp.example.com/realms/apim-mcp/protocol/openid-connect/token' \
+  -d 'grant_type=password' -d 'client_id=mcp-test-cli' \
+  -d 'client_secret=replace-me-client-secret' \
+  -d 'username=mcp-tester' -d 'password=replace-me' \
+  -d 'scope=openid mcp:tools'
+```
+
+Depois: `curl -H "Authorization: Bearer $TOKEN" http://<mcp>/…`
 
 #### Exemplos de Fuso Horário (`TZ`)
 *   **Américas:** `America/Sao_Paulo`, `America/New_York`, `America/Los_Angeles`
@@ -144,7 +228,8 @@ O servidor MCP suporta dois modos de transporte:
 #### 1. Modo HTTP (Padrão)
 - **Descrição:** Comunicação via HTTP com Server-Sent Events (SSE)
 - **Uso:** Ideal para integração com clientes web e aplicações que precisam de múltiplas sessões
-- **Ativação:** Padrão ou definindo `MCP_TRANSPORT=http`
+- **Ativação:** Padrão ou definindo `TRANSPORT_MODE=http`
+- **Auth:** recomenda-se `MCP_AUTH_MODE=oidc` quando exposto na rede
 
 #### 2. Modo STDIO
 - **Descrição:** Comunicação direta via stdin/stdout
@@ -157,7 +242,7 @@ O servidor MCP suporta dois modos de transporte:
 
     A partir da raiz do projeto, execute:
     ```bash
-    docker build -t axwayjbarros/apim-mcp:1.0.11 .
+    docker build -t axwayjbarros/apim-mcp:1.0.15 .
     ```
 
 2.  **Executar o Contêiner**
@@ -165,12 +250,18 @@ O servidor MCP suporta dois modos de transporte:
     Este é um exemplo completo de comando para executar o servidor em modo "detached" (`-d`), com reinício automático (`--restart unless-stopped`) e com todas as variáveis de ambiente configuradas.
     
     ```bash
-    # Modo HTTP (padrão)
+    # Modo HTTP (padrão) + OIDC
     docker run -d \
       -p 8080:3000 \
       --restart unless-stopped \
       --name axway-mcp-server \
       -e TRANSPORT_MODE="http" \
+      -e MCP_AUTH_MODE="oidc" \
+      -e OIDC_ISSUER="https://idp.example.com/realms/apim-mcp" \
+      -e OIDC_AUDIENCE="apim-mcp-api" \
+      -e MCP_RESOURCE_URL="http://localhost:8080" \
+      -e MCP_REQUIRED_SCOPES="mcp:tools" \
+      -e AXWAY_TLS_REJECT_UNAUTHORIZED="false" \
       -e AXWAY_GATEWAY_URL="https://seu-gateway:8090/api" \
       -e AXWAY_GATEWAY_USERNAME="admin" \
       -e AXWAY_GATEWAY_PASSWORD="sua_senha_aqui" \
@@ -178,7 +269,7 @@ O servidor MCP suporta dois modos de transporte:
       -e AXWAY_MANAGER_USERNAME="apiadmin" \
       -e AXWAY_MANAGER_PASSWORD="sua_senha_aqui" \
       -e TZ="America/Sao_Paulo" \
-      axwayjbarros/apim-mcp:1.0.11
+      axwayjbarros/apim-mcp:1.0.15
     ```
 
     ```bash
@@ -194,7 +285,7 @@ O servidor MCP suporta dois modos de transporte:
       -e AXWAY_MANAGER_USERNAME="apiadmin" \
       -e AXWAY_MANAGER_PASSWORD="sua_senha_aqui" \
       -e TZ="America/Sao_Paulo" \
-      axwayjbarros/apim-mcp:1.0.11
+      axwayjbarros/apim-mcp:1.0.15
     ```
     *   **Nota:** Se preferir, pode colocar todas as variáveis de ambiente (exceto `TZ`) num arquivo `.env` e usar a flag `--env-file .env` em vez das várias flags `-e`.
 
@@ -202,41 +293,79 @@ O servidor MCP suporta dois modos de transporte:
 
 Para ambientes Kubernetes, a implantação pode ser simplificada usando o Helm Chart incluído no projeto.
 
-1.  **Personalizar a Configuração**
+O chart inclui `_helpers.tpl`, ServiceAccount e variáveis OIDC/TLS em `values.yaml`.
 
-    Navegue até a pasta `helm/axway-mcp/` e edite o arquivo `values.yaml`. Preencha todas as variáveis de ambiente na seção `env:` com os seus dados, e defina a `tag` da imagem para a versão que pretende implantar (ex: `1.0.11`).
+**Users e senhas do Axway (Gateway + Manager) são obrigatoriamente um Secret Kubernetes** — não vão em plaintext no `values.yaml` nem no `Deployment`.
+
+1.  **Criar o Secret** (recomendado, fora do Helm):
+
+    ```bash
+    kubectl -n apim-mcp create secret generic axway-mcp-credentials \
+      --from-literal=AXWAY_GATEWAY_USERNAME='admin' \
+      --from-literal=AXWAY_GATEWAY_PASSWORD='***' \
+      --from-literal=AXWAY_MANAGER_USERNAME='apiadmin' \
+      --from-literal=AXWAY_MANAGER_PASSWORD='***'
+    ```
+
+    Ou a partir do exemplo: [`helm/axway-mcp/secret.example.yaml`](helm/axway-mcp/secret.example.yaml) (substitui `CHANGE_ME` e `kubectl apply -n apim-mcp -f …`).
+
+    Chaves esperadas (configuráveis em `values.secrets.keys`):
+
+    | Key no Secret | Env no pod |
+    |---------------|------------|
+    | `AXWAY_GATEWAY_USERNAME` | `AXWAY_GATEWAY_USERNAME` |
+    | `AXWAY_GATEWAY_PASSWORD` | `AXWAY_GATEWAY_PASSWORD` |
+    | `AXWAY_MANAGER_USERNAME` | `AXWAY_MANAGER_USERNAME` |
+    | `AXWAY_MANAGER_PASSWORD` | `AXWAY_MANAGER_PASSWORD` |
+
+2.  **Personalizar `values.yaml`** — URLs e OIDC em `env:`; referenciar o Secret:
 
     ```yaml
-    # helm/axway-mcp/values.yaml
-
     image:
       repository: axwayjbarros/apim-mcp
-      tag: "1.0.11" # <-- Defina a tag aqui
+      tag: "1.0.15"
+
+    secrets:
+      name: axway-mcp-credentials   # obrigatório
+      create: false                 # true só em lab (credenciais no Helm history)
 
     env:
       TZ: "America/Sao_Paulo"
+      MCP_AUTH_MODE: "oidc"
+      OIDC_ISSUER: "https://idp.example.com/realms/apim-mcp"
+      OIDC_AUDIENCE: "apim-mcp-api"
+      MCP_RESOURCE_URL: "https://mcp.seu-dominio"
+      MCP_REQUIRED_SCOPES: "mcp:tools"
+      AXWAY_TLS_REJECT_UNAUTHORIZED: "false"
       AXWAY_GATEWAY_URL: "https://seu-gateway:8090/api"
-      # ... preencha o resto das variáveis
+      AXWAY_MANAGER_URL: "https://seu-manager:8075/api/portal/v1.4"
     ```
 
-2.  **Instalar o Chart**
-
-    A partir da raiz do projeto, execute o comando `helm install`. Pode dar um nome à sua implantação (ex: `axway-mcp-release`).
+3.  **Instalar / actualizar o Chart**
 
     ```bash
-    # Instala o chart do diretório local
-    helm install axway-mcp-release ./helm/axway-mcp
-    ```
-
-3.  **Instalar com Parâmetros via Linha de Comando**
-
-    Como alternativa a editar o `values.yaml`, pode passar os parâmetros diretamente na linha de comando usando a flag `--set`.
-
-    ```bash
-    helm install axway-mcp-release ./helm/axway-mcp \
-      --set image.tag="1.0.11" \
+    helm upgrade --install axway-mcp ./helm/axway-mcp -n apim-mcp --create-namespace \
+      --set secrets.name=axway-mcp-credentials \
+      --set env.MCP_AUTH_MODE=oidc \
+      --set env.OIDC_ISSUER=https://idp.example.com/realms/apim-mcp \
+      --set env.OIDC_AUDIENCE=apim-mcp-api \
+      --set-string env.MCP_RESOURCE_URL=http://seu-lb \
       --set env.AXWAY_GATEWAY_URL="https://seu-gateway:8090/api" \
-      --set env.AXWAY_GATEWAY_USERNAME="admin" \
-      --set env.AXWAY_GATEWAY_PASSWORD="sua_senha_aqui" \
-      # ... e assim por diante para todas as outras variáveis
-    ``` 
+      --set env.AXWAY_MANAGER_URL="https://seu-manager:8075/api/portal/v1.4"
+    ```
+
+4.  **Actualizar credenciais** sem redeploy do chart (só o Secret + restart):
+
+    ```bash
+    kubectl -n apim-mcp create secret generic axway-mcp-credentials \
+      --from-literal=AXWAY_GATEWAY_USERNAME='...' \
+      --from-literal=AXWAY_GATEWAY_PASSWORD='...' \
+      --from-literal=AXWAY_MANAGER_USERNAME='...' \
+      --from-literal=AXWAY_MANAGER_PASSWORD='...' \
+      --dry-run=client -o yaml | kubectl apply -f -
+    kubectl -n apim-mcp rollout restart deploy/axway-mcp
+    ```
+
+#### Lab AKS (referência genérica)
+
+Exemplo de nomes: release `axway-mcp`, namespace `apim-mcp`, Secret `axway-mcp-credentials`, `MCP_AUTH_MODE=oidc`. Substitui imagem, issuer e URLs Axway pelos do teu ambiente — **sem** colocar secrets no git.

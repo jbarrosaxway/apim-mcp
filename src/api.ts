@@ -17,6 +17,29 @@ import * as zlib from 'zlib';
 const gunzip = promisify(zlib.gunzip);
 
 /**
+ * Resolve se o Axios deve rejeitar certificados TLS inválidos ao falar com o Axway.
+ *
+ * Precedência:
+ * 1. `AXWAY_TLS_INSECURE=true` → rejectUnauthorized=false
+ * 2. `AXWAY_TLS_REJECT_UNAUTHORIZED=true|false`
+ * 3. default → false (compatível com instalação Axway com cert autoassinado)
+ */
+function resolveAxwayTlsRejectUnauthorized(): boolean {
+  const insecure = (process.env.AXWAY_TLS_INSECURE || "").toLowerCase();
+  if (insecure === "true" || insecure === "1" || insecure === "yes") {
+    return false;
+  }
+  const explicit = (process.env.AXWAY_TLS_REJECT_UNAUTHORIZED || "").toLowerCase();
+  if (explicit === "true" || explicit === "1" || explicit === "yes") {
+    return true;
+  }
+  if (explicit === "false" || explicit === "0" || explicit === "no") {
+    return false;
+  }
+  return false;
+}
+
+/**
  * Classe que encapsula a lógica de comunicação com as APIs da Axway.
  *
  * Configura duas instâncias do Axios:
@@ -36,16 +59,22 @@ export class AxwayApi {
    *
    * - Lê as URLs e credenciais das variáveis de ambiente (ex: `AXWAY_GATEWAY_URL`).
    * - Configura a autenticação Basic para ambas as instâncias.
-   * - Desabilita a validação de certificado SSL (`rejectUnauthorized: false`) para
-   *   facilitar o uso em ambientes de desenvolvimento e demonstração com certificados autoassinados.
+   * - Validação TLS configurável via `AXWAY_TLS_REJECT_UNAUTHORIZED` / `AXWAY_TLS_INSECURE`
+   *   (default: rejectUnauthorized=false, típico para cert autoassinado Axway).
    * - Adiciona interceptadores de resposta para padronizar o tratamento de erros de API.
    * - Emite avisos no console se as variáveis de ambiente necessárias não estiverem definidas.
    */
   constructor() {
-    // Agente para desabilitar a validação de certificado SSL.
-    // ATENÇÃO: Use apenas em ambientes controlados e de desenvolvimento.
+    const rejectUnauthorized = resolveAxwayTlsRejectUnauthorized();
+    if (!rejectUnauthorized) {
+      console.warn(
+        "[AxwayApi] TLS certificate verification is DISABLED " +
+          "(AXWAY_TLS_REJECT_UNAUTHORIZED=false or AXWAY_TLS_INSECURE=true). " +
+          "Use only with trusted networks / Axway self-signed certs."
+      );
+    }
     const httpsAgent = new https.Agent({
-      rejectUnauthorized: false,
+      rejectUnauthorized,
     });
 
     // API Gateway Configuration

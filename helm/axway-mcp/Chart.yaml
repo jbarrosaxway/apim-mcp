@@ -8,7 +8,7 @@ version: 0.1.0
 
 # Esta é a versão da aplicação que este chart está a fazer o deploy.
 # É uma boa prática alinhar esta versão com a versão da sua imagem Docker.
-appVersion: "1.0.0"
+appVersion: "1.0.15"
 
 maintainers:
   - name: Joao Barros

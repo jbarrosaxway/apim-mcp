@@ -15,6 +15,10 @@ spec:
         {{- include "axway-mcp.selectorLabels" . | nindent 8 }}
     spec:
       serviceAccountName: {{ include "axway-mcp.serviceAccountName" . }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -32,33 +36,51 @@ spec:
               value: {{ .Values.env.TZ | quote }}
             - name: AXWAY_GATEWAY_URL
               value: {{ .Values.env.AXWAY_GATEWAY_URL | quote }}
-            - name: AXWAY_GATEWAY_USERNAME
-              value: {{ .Values.env.AXWAY_GATEWAY_USERNAME | quote }}
             - name: AXWAY_MANAGER_URL
               value: {{ .Values.env.AXWAY_MANAGER_URL | quote }}
-            - name: AXWAY_MANAGER_USERNAME
-              value: {{ .Values.env.AXWAY_MANAGER_USERNAME | quote }}
-
-            {{- if and .Values.secrets.name .Values.secrets.gatewayPasswordKey }}
-            - name: AXWAY_GATEWAY_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: {{ .Values.secrets.name }}
-                  key: {{ .Values.secrets.gatewayPasswordKey }}
-            {{- else }}
-            - name: AXWAY_GATEWAY_PASSWORD
-              value: {{ .Values.env.AXWAY_GATEWAY_PASSWORD | quote }}
+            - name: AXWAY_TLS_REJECT_UNAUTHORIZED
+              value: {{ .Values.env.AXWAY_TLS_REJECT_UNAUTHORIZED | quote }}
+            - name: AXWAY_TLS_INSECURE
+              value: {{ .Values.env.AXWAY_TLS_INSECURE | quote }}
+            - name: MCP_AUTH_MODE
+              value: {{ .Values.env.MCP_AUTH_MODE | quote }}
+            - name: OIDC_ISSUER
+              value: {{ .Values.env.OIDC_ISSUER | quote }}
+            - name: OIDC_AUDIENCE
+              value: {{ .Values.env.OIDC_AUDIENCE | quote }}
+            - name: MCP_RESOURCE_URL
+              value: {{ .Values.env.MCP_RESOURCE_URL | quote }}
+            - name: MCP_REQUIRED_SCOPES
+              value: {{ .Values.env.MCP_REQUIRED_SCOPES | quote }}
+            {{- if .Values.env.OIDC_JWKS_URI }}
+            - name: OIDC_JWKS_URI
+              value: {{ .Values.env.OIDC_JWKS_URI | quote }}
             {{- end }}
 
-            {{- if and .Values.secrets.name .Values.secrets.managerPasswordKey }}
+            {{- /* Axway users + passwords: always from Secret when secrets.name is set */ -}}
+            {{- if .Values.secrets.name }}
+            - name: AXWAY_GATEWAY_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.name }}
+                  key: {{ .Values.secrets.keys.gatewayUsername }}
+            - name: AXWAY_GATEWAY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.name }}
+                  key: {{ .Values.secrets.keys.gatewayPassword }}
+            - name: AXWAY_MANAGER_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.secrets.name }}
+                  key: {{ .Values.secrets.keys.managerUsername }}
             - name: AXWAY_MANAGER_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: {{ .Values.secrets.name }}
-                  key: {{ .Values.secrets.managerPasswordKey }}
+                  key: {{ .Values.secrets.keys.managerPassword }}
             {{- else }}
-            - name: AXWAY_MANAGER_PASSWORD
-              value: {{ .Values.env.AXWAY_MANAGER_PASSWORD | quote }}
+            {{- fail "secrets.name is required: put Axway usernames and passwords in a Kubernetes Secret (see README / docs)" }}
             {{- end }}
 
           {{- if .Values.probes.liveness.enabled }}
@@ -76,4 +98,4 @@ spec:
             periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
           {{- end }}
           resources:
-            {{- toYaml .Values.resources | nindent 12 }} 
+            {{- toYaml .Values.resources | nindent 12 }}

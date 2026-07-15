@@ -25,6 +25,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import formidable from 'formidable';
+import {
+  authenticateHttpRequest,
+  handleWellKnown,
+  loadAuthConfig,
+  logAuthStartup,
+} from "./auth/oidc.js";
 
 
 dotenv.config();
@@ -474,10 +480,25 @@ async function main() {
     console.error('Axway MCP Server pronto para comunicação via stdio');
   } else {
     // Modo HTTP: servidor web com StreamableHTTP
+    // Fail-fast se OIDC estiver mal configurado
+    loadAuthConfig();
+    logAuthStartup();
+
     const port = process.env.PORT || 3000;
     
     const httpServer = createServer((req, res) => {
-      server.handleRequest(req, res).catch(err => {
+      // RFC 9728 Protected Resource Metadata (sem autenticação)
+      if (handleWellKnown(req, res)) {
+        return;
+      }
+
+      (async () => {
+        const authResult = await authenticateHttpRequest(req, res);
+        if (authResult === false) {
+          return; // 401/403 já escrito
+        }
+        await server.handleRequest(req, res);
+      })().catch(err => {
         console.error("Error handling request:", err);
         if (!res.writableEnded) {
           res.writeHead(500).end("Internal Server Error");

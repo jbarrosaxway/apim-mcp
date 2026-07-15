@@ -1,16 +1,24 @@
 {
   "mcpServers": {
-    "Axway MCP - stdio - local": { 
-      "command": "node",  
-      "args": ["C:/Users/jbarros/apim-mcp/build/index.js"],
+    "Axway MCP (remoto OIDC)": {
+      "url": "http://mcp.example.com",
+      "auth": {
+        "CLIENT_ID": "mcp-cursor",
+        "scopes": ["openid", "profile", "mcp:tools"]
+      }
+    },
+    "Axway MCP - stdio - local": {
+      "command": "node",
+      "args": ["C:/path/to/apim-mcp/build/index.js"],
       "env": {
         "TRANSPORT_MODE": "stdio",
-        "AXWAY_GATEWAY_URL": "https://44.195.43.239:8090/api",
+        "AXWAY_TLS_REJECT_UNAUTHORIZED": "false",
+        "AXWAY_GATEWAY_URL": "https://anm.example.com/api",
         "AXWAY_GATEWAY_USERNAME": "admin",
-        "AXWAY_GATEWAY_PASSWORD": "changeme",
-        "AXWAY_MANAGER_URL": "https://44.195.43.239:8090/api/portal/v1.4",
+        "AXWAY_GATEWAY_PASSWORD": "replace-me",
+        "AXWAY_MANAGER_URL": "https://apimgr.example.com/api/portal/v1.4",
         "AXWAY_MANAGER_USERNAME": "apiadmin",
-        "AXWAY_MANAGER_PASSWORD": "changeme"
+        "AXWAY_MANAGER_PASSWORD": "replace-me"
       }
     }
   }

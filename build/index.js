@@ -19,6 +19,7 @@ import { randomUUID } from "crypto";
 import { tools } from "./tools.js";
 import { AxwayApi } from "./api.js";
 import * as dotenv from 'dotenv';
+import { authenticateHttpRequest, handleWellKnown, loadAuthConfig, logAuthStartup, } from "./auth/oidc.js";
 dotenv.config();
 // All operation imports are correct...
 import * as topology from "./operations/topology.js";
@@ -375,7 +376,26 @@ class AxwayMcpServer extends McpServer {
                 }
                 catch (error) {
                     console.error(`Error executing tool '${tool.method}':`, error);
-                    const errorMessage = error.response?.data?.errors?.[0]?.message || error.message || "An unknown error occurred.";
+                    // Função para extrair informações seguras do erro sem referências circulares
+                    const getSafeErrorMessage = (err) => {
+                        if (err?.response?.data?.errors?.[0]?.message) {
+                            return err.response.data.errors[0].message;
+                        }
+                        if (err?.response?.data?.message) {
+                            return err.response.data.message;
+                        }
+                        if (err?.response?.statusText) {
+                            return `${err.response.status} ${err.response.statusText}`;
+                        }
+                        if (err?.message) {
+                            return err.message;
+                        }
+                        if (err?.code) {
+                            return `Error code: ${err.code}`;
+                        }
+                        return "An unknown error occurred.";
+                    };
+                    const errorMessage = getSafeErrorMessage(error);
                     // Retornar um erro estruturado para o LLM
                     return {
                         content: [{
@@ -417,9 +437,22 @@ async function main() {
     }
     else {
         // Modo HTTP: servidor web com StreamableHTTP
+        // Fail-fast se OIDC estiver mal configurado
+        loadAuthConfig();
+        logAuthStartup();
         const port = process.env.PORT || 3000;
         const httpServer = createServer((req, res) => {
-            server.handleRequest(req, res).catch(err => {
+            // RFC 9728 Protected Resource Metadata (sem autenticação)
+            if (handleWellKnown(req, res)) {
+                return;
+            }
+            (async () => {
+                const authResult = await authenticateHttpRequest(req, res);
+                if (authResult === false) {
+                    return; // 401/403 já escrito
+                }
+                await server.handleRequest(req, res);
+            })().catch(err => {
                 console.error("Error handling request:", err);
                 if (!res.writableEnded) {
                     res.writeHead(500).end("Internal Server Error");
