@@ -1,371 +1,192 @@
-# Axway APIM MCP: Um Guia para o Projeto
+# Axway APIM MCP
 
-Bem-vindo à documentação do **Axway APIM MCP**. Este documento explica o que é um "MCP", como este projeto específico funciona, e como um modelo de linguagem (LLM) como eu o utiliza para interagir com o seu ambiente Axway API Management.
+**Versão:** `1.0.15`
 
-**Instalar, configurar e autenticar (fim a fim):** [docs/guia-fim-a-fim.md](docs/guia-fim-a-fim.md)  
-**Outros Identity Providers OIDC:** [docs/oidc-idps.md](docs/oidc-idps.md)
+Servidor [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) em **Node.js / TypeScript** para administrar e monitorizar ambientes **Axway API Gateway (ANM)** e **API Manager** a partir de clientes como o **Cursor**.
 
-## 1. O que é um MCP? (Para Leigos)
-
-Imagine que um Modelo de Linguagem (LLM) é um **Chef de Cozinha** genial. Ele sabe milhares de receitas e pode criar pratos incríveis, mas está "preso" dentro da cozinha. Ele não pode ir ao mercado comprar ingredientes.
-
-O **MCP (Model-Context-Protocol)** é o sistema que permite ao Chef trabalhar.
-
-*   **Modelo (O Chef):** É o cérebro da operação, o LLM. Ele entende os pedidos, pensa e dá as ordens.
-
-*   **Contexto (O Cardápio de Ferramentas):** É um "cardápio" que o Chef recebe, detalhando todos os ingredientes que um **Ajudante de Cozinha** pode buscar. Por exemplo, o cardápio diz:
-    *   "Posso buscar `cebolas`. Não preciso de mais informações."
-    *   "Posso buscar `queijo`. Preciso que me diga o `tipo` e a `quantidade`."
-    *   "Posso `verificar a temperatura do forno`."
-
-    Neste projeto, este "cardápio" é a lista de ferramentas que eu posso usar para interagir com a Axway (`list_topology`, `search_traffic_events`, etc.).
-
-*   **Protocolo (A Comunicação):** É a linguagem e as regras que o Chef e o Ajudante usam para se comunicar. O Chef faz um pedido estruturado ("Ajudante, traga-me 200g de queijo cheddar") e o Ajudante retorna com o ingrediente e uma confirmação ("Chef, aqui estão os 200g de queijo cheddar").
-
-Em resumo, o **MCP é um sistema que dá "mãos e pés" a um cérebro (LLM), permitindo-lhe interagir com o mundo exterior de forma segura e estruturada através de um conjunto de ferramentas pré-definidas.**
-
-## 2. Padrões de MCP e a Nossa Implementação
-
-A teoria do MCP é implementada neste projeto da seguinte forma:
-
-| Padrão MCP | Nossa Implementação (`axway-mcp`) |
-| :--- | :--- |
-| **Servidor MCP** | Um servidor web escrito em **Node.js** e **TypeScript** (`src/index.ts`). Ele é o nosso "Ajudante de Cozinha", que ouve os pedidos do LLM. |
-| **Transporte (Protocolo)** | Usamos o **Streamable HTTP Transport**. Isto significa que a comunicação acontece via HTTP, e o servidor pode "transmitir" respostas longas, o que é ótimo para tarefas demoradas. |
-| **Definição de Ferramentas (Contexto)**| Cada ferramenta disponível é definida em `src/operations/`. Cada arquivo (ex: `monitoring.ts`, `users.ts`) agrupa funcionalidades relacionadas. O arquivo `src/tools.ts` define o "cardápio": o nome de cada ferramenta, sua descrição e os parâmetros (argumentos) que ela exige. |
-| **Ponte com o Mundo Real** | O arquivo `src/api.ts` contém a classe `AxwayApi`. Esta é a parte que realmente "vai ao mercado", ou seja, que sabe como fazer as chamadas de API reais para o seu Axway API Gateway e API Manager. |
-| **Empacotamento** | O projeto é empacotado numa imagem **Docker**. Isto garante que o "Ajudante de Cozinha" tem sempre o seu ambiente de trabalho configurado da mesma forma, não importa onde ele é executado. Usamos um `.dockerignore` para garantir que segredos (como o arquivo `.env`) nunca entrem na imagem. |
-
-## 3. Análise da Stack Tecnológica: Por que Node.js e TypeScript?
-
-A escolha de uma stack tecnológica é um compromisso entre performance, ecossistema e produtividade da equipe. Esta seção oferece uma análise realista da nossa escolha (Node.js/TypeScript) em comparação com outras alternativas populares para a construção de um servidor MCP.
-
-| Linguagem / Stack | Prós (Vantagens) | Contras (Desvantagens) | Veredito para este MCP |
-| :--- | :--- | :--- | :--- |
-| **Node.js + TypeScript (A nossa escolha)** | **Excelente para I/O:** O modelo assíncrono e não-bloqueante é perfeito para um MCP, que passa a maior parte do tempo esperando respostas de APIs. <br> **Ecossistema Gigante:** O NPM tem bibliotecas para tudo. <br> **JSON Nativo:** A manipulação de JSON é trivial e performática. <br> **Segurança de Tipos:** O TypeScript evita muitos erros comuns em projetos complexos. | **Performance em CPU:** Não é ideal para tarefas de processamento pesado (ex: cálculos matemáticos complexos), pois pode bloquear o event loop. <br> **Gestão de Concorrência:** Embora `async/await` seja ótimo, não é um verdadeiro paralelismo. | **Escolha Ideal.** O perfil do nosso projeto é 99% I/O-bound, o que anula a principal desvantagem do Node.js. A produtividade e o vasto ecossistema justificam a escolha. |
-| **Python + FastAPI** | **Fácil e Rápido de Desenvolver:** A sintaxe é limpa e a produtividade é altíssima. <br> **Excelente Suporte a Async:** Frameworks modernos como FastAPI são tão eficientes quanto Node.js para tarefas de I/O. <br> **Ecossistema de IA:** A integração com ferramentas de IA e Machine Learning é a melhor do mercado. | **GIL (Global Interpreter Lock):** Limita o paralelismo real em tarefas CPU-bound. <br> **Gestão de Dependências:** Pode ser mais complexa (venv, poetry, pip). | **Competidor Muito Forte.** Seria uma escolha igualmente válida. A decisão a favor do Node.js/TypeScript foi marginal, baseada na maturidade do ecossistema para servidores web e na preferência da equipe. |
-| **Go (Golang)** | **Performance Bruta:** Compilado para um binário único, é extremamente rápido. <br> **Concorrência Nativa:** Goroutines são um modelo superior para gerenciar milhares de conexões em paralelo com baixo custo. <br> **Deploy Simples:** O binário único facilita a criação de imagens Docker mínimas. | **Ecossistema Menor:** Menos bibliotecas prontas para usar em comparação com Node ou Python. <br> **Verboso:** A sintaxe, especialmente a gestão de erros, pode ser mais repetitiva. | **Exagerado (Overkill).** Embora a performance seja superior, a complexidade adicional no desenvolvimento e o ecossistema menos rico para a manipulação de APIs não compensam o ganho de velocidade, que não é o nosso principal gargalo. |
-| **Java + Spring / Vert.x** | **Robustez e Escalabilidade:** Plataforma testada em batalha para aplicações empresariais de grande escala. <br> **Ecossistema Maduro:** Bibliotecas de alta qualidade para tudo. <br> **Modelos Reativos:** Frameworks como WebFlux/Vert.x oferecem I/O não-bloqueante. | **Verboso e Pesado:** Mais código para fazer a mesma coisa. O consumo de memória e o tempo de inicialização são geralmente maiores. | **Inadequado.** A complexidade e o peso da plataforma são desproporcionais para a simplicidade de um servidor MCP. A produtividade seria significativamente menor. |
+| Guia | Conteúdo |
+|------|----------|
+| **[docs/guia-fim-a-fim.md](docs/guia-fim-a-fim.md)** | Instalar, configurar Axway + OIDC e autenticar no Cursor |
+| **[docs/oidc-idps.md](docs/oidc-idps.md)** | Ligar Keycloak, Entra ID, Okta, Auth0 (ou outro OIDC) |
+| **[helm/axway-mcp/](helm/axway-mcp/)** | Chart Kubernetes (Secret obrigatório para users/senhas Axway) |
 
 ---
-**Conclusão da Análise:** Node.js com TypeScript representa o "ponto ótimo" para este projeto específico, equilibrando de forma ideal a **performance em tarefas de I/O**, a **produtividade do desenvolvimento** e um **ecossistema maduro** que nos permite construir de forma rápida e segura.
 
-## 4. O Fluxo de uma Solicitação: Da Pergunta à Resposta
+## O que há de novo (1.0.15)
 
-Vamos ver um exemplo prático de como um pedido seu é processado.
+- **OAuth 2.1 Resource Server** no transporte HTTP (`MCP_AUTH_MODE=oidc`) — JWT via JWKS, Protected Resource Metadata (RFC 9728)
+- **TLS Axway configurável** (`AXWAY_TLS_REJECT_UNAUTHORIZED` / `AXWAY_TLS_INSECURE`) — default compatível com cert autoassinado
+- **Helm:** credentials Axway só via **Kubernetes Secret** (`secretKeyRef`); helpers, ServiceAccount e envs OIDC
+- Transportes: **Streamable HTTP** (remoto) e **stdio** (local)
+- Documentação fim a fim sem credenciais reais nos exemplos
 
-**O seu Pedido:** *"Veja as chamadas com erro no último dia."*
+---
 
-1.  **O Chef (LLM) Pensa:** Eu recebo o seu pedido. Analiso o "cardápio" de ferramentas que o `axway-mcp` me ofereceu. Encontro uma ferramenta chamada `search_traffic_events` que parece perfeita para a tarefa. A descrição dela diz que posso filtrar por tempo (`ago`), por campo (`searchField`) e por valor (`searchValue`).
+## Arquitectura (duas autenticações)
 
-2.  **O Chef (LLM) Ordena:** Eu formulo um pedido estruturado (uma chamada de ferramenta):
-    `search_traffic_events(ago='24h', searchField='finalStatus', searchValue='Fail')`
+```text
+  Cursor / cliente MCP
+        │  OIDC Bearer JWT     (quem pode usar o MCP — só em HTTP)
+        ▼
+  axway-mcp 1.0.15
+        │  Basic Auth AXWAY_*  (MCP → Gateway + Manager)
+        ▼
+  API Gateway / ANM   +   API Manager
+```
 
-3.  **O Ajudante (Servidor MCP) Recebe:** O nosso servidor Node.js, rodando no Docker, recebe esta chamada. Ele identifica que a ferramenta `search_traffic_events` deve ser executada.
+| Plano | Variáveis | Notas |
+|-------|-----------|--------|
+| Cliente → MCP | `MCP_AUTH_MODE`, `OIDC_*`, `MCP_RESOURCE_URL` | Ignorado em `stdio` |
+| MCP → Axway | `AXWAY_GATEWAY_*`, `AXWAY_MANAGER_*`, TLS | Em K8s: users/senhas no Secret |
 
-4.  **O Ajudante (Servidor MCP) Trabalha:** O servidor chama a função correspondente em `src/operations/monitoring.ts`. Essa função, por sua vez, usa a classe `AxwayApi` de `src/api.ts` para fazer uma chamada real à API de monitoramento do seu Axway Gateway.
+---
 
-5.  **O Mercado (Axway) Responde:** O seu Axway Gateway retorna os dados brutos dos eventos de erro para o nosso servidor.
+## Arranque rápido
 
-6.  **O Ajudante (Servidor MCP) Entrega:** O servidor pega nos dados, formata-os como uma string de **JSON compacto** (uma decisão que tomamos para economizar tokens e custos) e envia-os de volta para mim.
-
-7.  **O Chef (LLM) Apresenta o Prato:** Eu recebo o JSON compacto. É um ingrediente bruto, não muito apresentável. A minha tarefa final é "empratar": eu analiso o JSON, extraio a informação mais importante e apresento-a a si de forma legível, como uma **tabela em Markdown**.
-
-## 5. Entendendo os Campos Retornados
-
-Como viu no fluxo acima, o que o servidor retorna é o "ingrediente bruto" (JSON compacto). A minha função é interpretá-lo. No entanto, alguns campos são chaves para desbloquear mais informações.
-
-*   `correlationId`: Pense nisto como o **número de série único** de uma transação. Quase todos os eventos de tráfego têm um. Se você me pedir mais detalhes sobre um erro específico, eu uso este `correlationId` para chamar outras ferramentas, como `get_traffic_event_details` ou `get_traffic_event_trace`.
-
-*   `instanceId`, `groupId`: São os identificadores da sua topologia. A ferramenta `list_topology` retorna-os. Se você me pedir para ver o tráfego de uma instância específica, eu primeiro uso `list_topology` para saber o `instanceId` e depois uso esse ID para chamar `get_instance_traffic`.
-
-*   `id` (em Organizações, Aplicações, Usuários, etc.): É o identificador único de um objeto no API Manager. Funciona da mesma forma: para atualizar um usuário, primeiro preciso do seu `id`, que posso obter com `list_users`.
-
-A lógica é sempre a mesma: **usar ferramentas mais gerais para obter IDs e, em seguida, usar esses IDs como "chaves" para ferramentas mais específicas.**
-
-## 6. Um Mergulho Fundo no Streamable HTTP Transport
-
-A comunicação entre o LLM e o servidor MCP precisa ser persistente para simular uma conversa. O `StreamableHttpServerTransport` consegue isto de uma forma inteligente usando **Server-Sent Events (SSE)**, e o seu funcionamento baseia-se num ciclo de vida de sessão que envolve os métodos `POST` e `GET`.
-
-### Passo 1: Criação da Sessão (Método `POST`)
-
-Tudo começa quando um cliente (o LLM) quer iniciar uma nova conversa.
-
-1.  **Primeiro Contato:** O cliente envia uma solicitação `POST` para o endpoint raiz (`/`) do servidor. Esta primeira chamada pode ou não conter uma chamada de ferramenta.
-2.  **Nasce uma Sessão:** Ao receber este `POST`, o servidor:
-    *   Cria uma nova instância do `StreamableHTTPServerTransport`. Este objeto irá gerenciar a comunicação para esta sessão específica.
-    *   Gera um `sessionId` único (um UUID).
-    *   Armazena a nova instância de transporte num mapa global, usando o `sessionId` como chave (ex: `transports[sessionId] = novoTransporte`).
-3.  **A Resposta:** O servidor responde a esta solicitação `POST` e, crucialmente, inclui o `sessionId` num cabeçalho da resposta (ex: `x-mcp-session-id`). A conexão HTTP é mantida aberta para que o servidor possa "empurrar" eventos (respostas de ferramentas) para o cliente via SSE.
-
-### Passo 2: A Conversa (Métodos `POST` Subsequentes)
-
-Agora que a sessão está estabelecida, todas as chamadas de ferramentas subsequentes do LLM para o servidor são feitas via solicitações `POST` que **obrigatoriamente** incluem o `sessionId` no cabeçalho. O servidor usa este ID para encontrar o objeto de transporte correto no seu mapa e processar o pedido.
-
-### Passo 3: Reconexão de Sessão (Método `GET`)
-
-Este é o cenário que o código no topo desta seção resolve. Se o cliente se desconectar (ex: a rede falha, o usuário atualiza a página), ele pode continuar a mesma conversa sem perder o histórico.
-
-1.  **Pedido de Reconexão:** O cliente envia uma solicitação `GET` para o endpoint raiz (`/`), incluindo o seu `sessionId` no cabeçalho.
-2.  **Lógica do Servidor:**
-    *   O servidor verifica que o método é `GET`.
-    *   Ele extrai o `sessionId` do cabeçalho.
-    *   Procura no seu mapa de transportes por uma sessão ativa com aquele ID.
-    *   Se a sessão for encontrada, o servidor entrega o controle do pedido ao objeto de transporte existente, que reestabelece o fluxo SSE. A conversa pode continuar.
-    *   Se a sessão não for encontrada (ou se nenhum `sessionId` for enviado), o servidor retorna um erro `405 Method Not Allowed`, pois o método `GET` só é permitido para reconexões.
-
-Este mecanismo torna a comunicação robusta, eficiente e compatível com a infraestrutura web padrão, sem a necessidade de um upgrade de protocolo como o que acontece com WebSockets.
-
-## 7. Configuração e Execução
-
-Este projeto foi desenhado para ser executado como um contêiner Docker. A sua configuração é feita através de variáveis de ambiente no momento da execução.
-
-### Variáveis de Ambiente Obrigatórias
-
-A tabela abaixo detalha todas as variáveis de ambiente necessárias para que o servidor se conecte corretamente ao seu ambiente Axway.
-
-| Variável de Ambiente | Descrição | Obrigatório | Exemplo |
-| :--- | :--- | :--- | :--- |
-| `AXWAY_GATEWAY_URL` | URL da API de Gestão do API Gateway. | Sim | `https://seu-gateway:8090/api` |
-| `AXWAY_GATEWAY_USERNAME` | Nome de usuário para o API Gateway. | Sim | `admin` |
-| `AXWAY_GATEWAY_PASSWORD` | Senha para o usuário do API Gateway. | Sim | `changeme` |
-| `AXWAY_MANAGER_URL` | URL da API do Portal do API Manager. | Sim | `https://seu-manager:8075/api/portal/v1.4` |
-| `AXWAY_MANAGER_USERNAME` | Nome de usuário para o API Manager. | Sim | `apiadmin` |
-| `AXWAY_MANAGER_PASSWORD` | Senha para o usuário do API Manager. | Sim | `changeme` |
-| `TRANSPORT_MODE` | Define o modo de transporte. Pode ser `http` (padrão) ou `stdio`. | Não | `http` |
-| `TZ` | Fuso horário (IANA) para o contêiner. | Não | `America/Sao_Paulo` |
-| `AXWAY_TLS_REJECT_UNAUTHORIZED` | Se `true`, valida certificados TLS do Axway. Default `false` (cert autoassinado). | Não | `false` |
-| `AXWAY_TLS_INSECURE` | Atalho: `true` força `rejectUnauthorized=false`. | Não | `false` |
-| `MCP_AUTH_MODE` | Auth do transporte HTTP: `none` (default) ou `oidc`. Ignorado em stdio. | Não | `oidc` |
-| `OIDC_ISSUER` | Issuer OIDC (sem barra final). Obrigatório se `MCP_AUTH_MODE=oidc`. | Condicional | `https://idp.example.com/realms/apim-mcp` |
-| `OIDC_AUDIENCE` | Audience esperado no access token JWT. | Condicional | `apim-mcp-api` |
-| `MCP_RESOURCE_URL` | URL canónica deste MCP (RFC 9728 / resource indicator). | Condicional | `https://mcp.example.com` |
-| `MCP_REQUIRED_SCOPES` | Scopes obrigatórios (espaço ou vírgula). | Não | `mcp:tools` |
-| `OIDC_JWKS_URI` | JWKS explícito; se omitido, usa discovery do issuer. | Não | *(vazio)* |
-
-#### TLS para o Axway
-
-A instalação padrão do Axway costuma usar certificado autoassinado. Por isso o default é **não** rejeitar certificados inválidos (`AXWAY_TLS_REJECT_UNAUTHORIZED=false`). Em produção com CA válida, defina `AXWAY_TLS_REJECT_UNAUTHORIZED=true`.
-
-#### Auth HTTP (OAuth 2.1 / OIDC genérico)
-
-No modo **HTTP**, o MCP actua como **OAuth 2.1 Resource Server** (não abre browser). O **cliente MCP** (ex.: Cursor remoto) faz Authorization Code + PKCE no IdP e envia `Authorization: Bearer <JWT>`.
-
-Guia para adicionar **Keycloak, Entra ID, Okta, Auth0** ou qualquer outro IdP OIDC: [docs/oidc-idps.md](docs/oidc-idps.md).
-
-Fluxo resumido:
-
-1. Cliente chama o MCP sem token → `401` + `WWW-Authenticate` com `resource_metadata`.
-2. Cliente lê `GET /.well-known/oauth-protected-resource` (RFC 9728).
-3. Cliente autentica no Authorization Server (OIDC) e obtém um access token.
-4. Pedidos seguintes incluem o Bearer JWT; o MCP valida assinatura (JWKS), `iss`, `aud` e scopes.
-
-O modo **stdio** continua sem OAuth (processo local).
+### Local (stdio)
 
 ```bash
-# Exemplo HTTP + OIDC
-export MCP_AUTH_MODE=oidc
-export OIDC_ISSUER=https://idp.example.com/realms/apim-mcp
-export OIDC_AUDIENCE=apim-mcp-api
-export MCP_RESOURCE_URL=http://seu-mcp-host
-export MCP_REQUIRED_SCOPES=mcp:tools
+npm ci && npm run build
 ```
 
-#### Runbook Keycloak (exemplo)
+Exemplo em [`.cursor/mcp.json`](.cursor/mcp.json) — preencher URLs/credenciais Axway (placeholders `replace-me`). Sem OIDC.
 
-IdP de exemplo: `https://idp.example.com/`
-
-Objectos tipicos no realm **`apim-mcp`** (via Admin API / script `scripts/setup-keycloak-apim-mcp.ps1`):
-
-| Objecto | Nome | Notas |
-| :--- | :--- | :--- |
-| Realm | `apim-mcp` | Isolado do realm `master` |
-| Client scope | `mcp:tools` | Incluído no token; mapper de audience |
-| Client (audience) | `apim-mcp-api` | Valor de `aud` validado pelo MCP (`OIDC_AUDIENCE`) |
-| Client público | `mcp-cursor` | Auth Code + PKCE (browser no cliente MCP) |
-| Client confidential | `mcp-test-cli` | Smoke tests (direct access grants **só lab**) |
-| User de teste | `mcp-tester` | Login no Cursor / browser do IdP |
-
-**Credenciais OIDC de exemplo (substituir pelos valores reais do teu IdP):**
-
-| Campo | Valor de exemplo |
-| :--- | :--- |
-| Realm | `apim-mcp` |
-| Username | `mcp-tester` |
-| Password | `replace-me` |
-| Client Cursor (público) | `mcp-cursor` |
-| Client smoke (confidential) | `mcp-test-cli` / secret `replace-me-client-secret` |
-
-> Nunca commits passwords reais. Em lab, gera e guarda fora do git.
-
-Provisionar / re-sincronizar (password admin via parâmetro ou `KC_ADMIN_PASSWORD`, **nunca** no git):
-
-```powershell
-powershell -File scripts/setup-keycloak-apim-mcp.ps1 -AdminPassword '<admin>'
-```
-
-Smoke token (lab):
+### Docker (HTTP + OIDC)
 
 ```bash
-curl -s -X POST 'https://idp.example.com/realms/apim-mcp/protocol/openid-connect/token' \
-  -d 'grant_type=password' -d 'client_id=mcp-test-cli' \
-  -d 'client_secret=replace-me-client-secret' \
-  -d 'username=mcp-tester' -d 'password=replace-me' \
-  -d 'scope=openid mcp:tools'
+docker build -t axwayjbarros/apim-mcp:1.0.15 .
+
+docker run -d -p 8080:3000 --name axway-mcp \
+  -e TRANSPORT_MODE=http \
+  -e MCP_AUTH_MODE=oidc \
+  -e OIDC_ISSUER=https://idp.example.com/realms/apim-mcp \
+  -e OIDC_AUDIENCE=apim-mcp-api \
+  -e MCP_RESOURCE_URL=http://localhost:8080 \
+  -e MCP_REQUIRED_SCOPES=mcp:tools \
+  -e AXWAY_TLS_REJECT_UNAUTHORIZED=false \
+  -e AXWAY_GATEWAY_URL=https://anm.example.com/api \
+  -e AXWAY_GATEWAY_USERNAME=admin \
+  -e AXWAY_GATEWAY_PASSWORD=replace-me \
+  -e AXWAY_MANAGER_URL=https://apimgr.example.com/api/portal/v1.4 \
+  -e AXWAY_MANAGER_USERNAME=apiadmin \
+  -e AXWAY_MANAGER_PASSWORD=replace-me \
+  axwayjbarros/apim-mcp:1.0.15
 ```
 
-Depois: `curl -H "Authorization: Bearer $TOKEN" http://<mcp>/…`
+### Kubernetes (Helm)
 
-#### Exemplos de Fuso Horário (`TZ`)
-*   **Américas:** `America/Sao_Paulo`, `America/New_York`, `America/Los_Angeles`
-*   **Europa:** `Europe/Lisbon`, `Europe/London`, `Europe/Paris`, `Europe/Berlin`
-*   **Padrão (se não for fornecido):** `UTC`
+```bash
+kubectl create namespace apim-mcp
 
-### Modos de Transporte
+kubectl -n apim-mcp create secret generic axway-mcp-credentials \
+  --from-literal=AXWAY_GATEWAY_USERNAME='admin' \
+  --from-literal=AXWAY_GATEWAY_PASSWORD='replace-me' \
+  --from-literal=AXWAY_MANAGER_USERNAME='apiadmin' \
+  --from-literal=AXWAY_MANAGER_PASSWORD='replace-me'
 
-O servidor MCP suporta dois modos de transporte:
+helm upgrade --install axway-mcp ./helm/axway-mcp -n apim-mcp \
+  --set image.repository=axwayjbarros/apim-mcp \
+  --set image.tag=1.0.15 \
+  --set secrets.name=axway-mcp-credentials \
+  --set env.MCP_AUTH_MODE=oidc \
+  --set env.OIDC_ISSUER=https://idp.example.com/realms/apim-mcp \
+  --set env.OIDC_AUDIENCE=apim-mcp-api \
+  --set-string env.MCP_RESOURCE_URL=http://mcp.example.com \
+  --set env.MCP_REQUIRED_SCOPES=mcp:tools \
+  --set-string env.AXWAY_GATEWAY_URL=https://anm.example.com/api \
+  --set-string env.AXWAY_MANAGER_URL=https://apimgr.example.com/api/portal/v1.4 \
+  --set env.AXWAY_TLS_REJECT_UNAUTHORIZED=false
+```
 
-#### 1. Modo HTTP (Padrão)
-- **Descrição:** Comunicação via HTTP com Server-Sent Events (SSE)
-- **Uso:** Ideal para integração com clientes web e aplicações que precisam de múltiplas sessões
-- **Ativação:** Padrão ou definindo `TRANSPORT_MODE=http`
-- **Auth:** recomenda-se `MCP_AUTH_MODE=oidc` quando exposto na rede
+Passos completos (OIDC no IdP, Cursor, smoke tests): **[docs/guia-fim-a-fim.md](docs/guia-fim-a-fim.md)**.
 
-#### 2. Modo STDIO
-- **Descrição:** Comunicação direta via stdin/stdout
-- **Uso:** Ideal para integração direta com LLMs locais ou ferramentas de linha de comando
-- **Ativação:** Definindo `TRANSPORT_MODE=stdio` ou usando argumentos `--stdio` ou `-s`
+---
 
-### Como Construir e Executar
+## Variáveis de ambiente
 
-1.  **Construir a Imagem**
+### Axway
 
-    A partir da raiz do projeto, execute:
-    ```bash
-    docker build -t axwayjbarros/apim-mcp:1.0.15 .
-    ```
+| Variável | Obrigatório | Descrição |
+|----------|-------------|-----------|
+| `AXWAY_GATEWAY_URL` | Sim | Base da API do Gateway (`…/api`) |
+| `AXWAY_GATEWAY_USERNAME` / `PASSWORD` | Sim | Em Helm: chaves do Secret |
+| `AXWAY_MANAGER_URL` | Sim | Base do Portal (`…/api/portal/v1.4`) |
+| `AXWAY_MANAGER_USERNAME` / `PASSWORD` | Sim | Em Helm: chaves do Secret |
+| `AXWAY_TLS_REJECT_UNAUTHORIZED` | Não | Default `false` (cert autoassinado) |
+| `AXWAY_TLS_INSECURE` | Não | `true` ⇒ TLS verify off |
 
-2.  **Executar o Contêiner**
+### Runtime / auth
 
-    Este é um exemplo completo de comando para executar o servidor em modo "detached" (`-d`), com reinício automático (`--restart unless-stopped`) e com todas as variáveis de ambiente configuradas.
-    
-    ```bash
-    # Modo HTTP (padrão) + OIDC
-    docker run -d \
-      -p 8080:3000 \
-      --restart unless-stopped \
-      --name axway-mcp-server \
-      -e TRANSPORT_MODE="http" \
-      -e MCP_AUTH_MODE="oidc" \
-      -e OIDC_ISSUER="https://idp.example.com/realms/apim-mcp" \
-      -e OIDC_AUDIENCE="apim-mcp-api" \
-      -e MCP_RESOURCE_URL="http://localhost:8080" \
-      -e MCP_REQUIRED_SCOPES="mcp:tools" \
-      -e AXWAY_TLS_REJECT_UNAUTHORIZED="false" \
-      -e AXWAY_GATEWAY_URL="https://seu-gateway:8090/api" \
-      -e AXWAY_GATEWAY_USERNAME="admin" \
-      -e AXWAY_GATEWAY_PASSWORD="sua_senha_aqui" \
-      -e AXWAY_MANAGER_URL="https://seu-manager:8075/api/portal/v1.4" \
-      -e AXWAY_MANAGER_USERNAME="apiadmin" \
-      -e AXWAY_MANAGER_PASSWORD="sua_senha_aqui" \
-      -e TZ="America/Sao_Paulo" \
-      axwayjbarros/apim-mcp:1.0.15
-    ```
+| Variável | Obrigatório | Descrição |
+|----------|-------------|-----------|
+| `TRANSPORT_MODE` | Não | `http` (default) ou `stdio` |
+| `PORT` | Não | Default `3000` |
+| `TZ` | Não | Ex.: `America/Sao_Paulo` |
+| `MCP_AUTH_MODE` | Não | `none` ou `oidc` (HTTP) |
+| `OIDC_ISSUER` | Se oidc | Issuer OIDC (sem `/` final) |
+| `OIDC_AUDIENCE` | Se oidc | Claim `aud` do JWT |
+| `MCP_RESOURCE_URL` | Se oidc | URL canónica do MCP (RFC 9728) |
+| `MCP_REQUIRED_SCOPES` | Não | Ex.: `mcp:tools` |
+| `OIDC_JWKS_URI` | Não | Override do JWKS (senão discovery) |
 
-    ```bash
-    # Modo STDIO (para integração direta com LLMs)
-    docker run -d \
-      --restart unless-stopped \
-      --name axway-mcp-server-stdio \
-      -e TRANSPORT_MODE="stdio" \
-      -e AXWAY_GATEWAY_URL="https://seu-gateway:8090/api" \
-      -e AXWAY_GATEWAY_USERNAME="admin" \
-      -e AXWAY_GATEWAY_PASSWORD="sua_senha_aqui" \
-      -e AXWAY_MANAGER_URL="https://seu-manager:8075/api/portal/v1.4" \
-      -e AXWAY_MANAGER_USERNAME="apiadmin" \
-      -e AXWAY_MANAGER_PASSWORD="sua_senha_aqui" \
-      -e TZ="America/Sao_Paulo" \
-      axwayjbarros/apim-mcp:1.0.15
-    ```
-    *   **Nota:** Se preferir, pode colocar todas as variáveis de ambiente (exceto `TZ`) num arquivo `.env` e usar a flag `--env-file .env` em vez das várias flags `-e`.
+---
 
-### Opção 2: Implantação com Helm (para Kubernetes)
+## Cursor (cliente MCP)
 
-Para ambientes Kubernetes, a implantação pode ser simplificada usando o Helm Chart incluído no projeto.
+**Remoto (OIDC):**
 
-O chart inclui `_helpers.tpl`, ServiceAccount e variáveis OIDC/TLS em `values.yaml`.
+```json
+{
+  "mcpServers": {
+    "Axway MCP": {
+      "url": "http://mcp.example.com",
+      "auth": {
+        "CLIENT_ID": "mcp-cursor",
+        "scopes": ["openid", "profile", "mcp:tools"]
+      }
+    }
+  }
+}
+```
 
-**Users e senhas do Axway (Gateway + Manager) são obrigatoriamente um Secret Kubernetes** — não vão em plaintext no `values.yaml` nem no `Deployment`.
+Settings → Tools & MCP → **Connect** → login no IdP.
 
-1.  **Criar o Secret** (recomendado, fora do Helm):
+**Local (stdio):** ver [`.cursor/mcp.json`](.cursor/mcp.json).
 
-    ```bash
-    kubectl -n apim-mcp create secret generic axway-mcp-credentials \
-      --from-literal=AXWAY_GATEWAY_USERNAME='admin' \
-      --from-literal=AXWAY_GATEWAY_PASSWORD='***' \
-      --from-literal=AXWAY_MANAGER_USERNAME='apiadmin' \
-      --from-literal=AXWAY_MANAGER_PASSWORD='***'
-    ```
+---
 
-    Ou a partir do exemplo: [`helm/axway-mcp/secret.example.yaml`](helm/axway-mcp/secret.example.yaml) (substitui `CHANGE_ME` e `kubectl apply -n apim-mcp -f …`).
+## Capacidades (tools)
 
-    Chaves esperadas (configuráveis em `values.secrets.keys`):
+O servidor expoe dezenas de tools em `src/tools.ts` / `src/operations/`, entre outras:
 
-    | Key no Secret | Env no pod |
-    |---------------|------------|
-    | `AXWAY_GATEWAY_USERNAME` | `AXWAY_GATEWAY_USERNAME` |
-    | `AXWAY_GATEWAY_PASSWORD` | `AXWAY_GATEWAY_PASSWORD` |
-    | `AXWAY_MANAGER_USERNAME` | `AXWAY_MANAGER_USERNAME` |
-    | `AXWAY_MANAGER_PASSWORD` | `AXWAY_MANAGER_PASSWORD` |
+| Área | Exemplos |
+|------|----------|
+| Topologia / sistema | `list_topology`, `get_mcp_server_time`, `get_manager_config` |
+| Monitorização | `search_traffic_events`, `get_traffic_event_details`, `get_instance_traffic` |
+| Organizações / users | CRUD `list_*` / `create_*` / `update_*` / `delete_*` |
+| Aplicações / credenciais | API keys, OAuth, permissions |
+| Proxies / catálogo | publish, unpublish, deprecate, auth info |
+| Backend / acesso | import OpenAPI, grant/revoke API access |
+| Alertas / cotas | `list_alerts`, `get_application_quotas` |
 
-2.  **Personalizar `values.yaml`** — URLs e OIDC em `env:`; referenciar o Secret:
+O LLM obtém IDs com listagens e encadeia tools específicas (`correlationId`, `instanceId`, etc.).
 
-    ```yaml
-    image:
-      repository: axwayjbarros/apim-mcp
-      tag: "1.0.15"
+---
 
-    secrets:
-      name: axway-mcp-credentials   # obrigatório
-      create: false                 # true só em lab (credenciais no Helm history)
+## Layout do código
 
-    env:
-      TZ: "America/Sao_Paulo"
-      MCP_AUTH_MODE: "oidc"
-      OIDC_ISSUER: "https://idp.example.com/realms/apim-mcp"
-      OIDC_AUDIENCE: "apim-mcp-api"
-      MCP_RESOURCE_URL: "https://mcp.seu-dominio"
-      MCP_REQUIRED_SCOPES: "mcp:tools"
-      AXWAY_TLS_REJECT_UNAUTHORIZED: "false"
-      AXWAY_GATEWAY_URL: "https://seu-gateway:8090/api"
-      AXWAY_MANAGER_URL: "https://seu-manager:8075/api/portal/v1.4"
-    ```
+| Path | Função |
+|------|--------|
+| `src/index.ts` | Entrada MCP (HTTP sessões + stdio) + gate OIDC |
+| `src/auth/oidc.ts` | Resource Server (PRM, JWT/JWKS) |
+| `src/api.ts` | Cliente Axway (Gateway + Manager) |
+| `src/tools.ts` | Schemas Zod das tools |
+| `src/operations/*` | Implementações por domínio |
+| `helm/axway-mcp/` | Deploy K8s |
+| `scripts/setup-keycloak-apim-mcp.ps1` | Provisionamento Keycloak (exemplo) |
 
-3.  **Instalar / actualizar o Chart**
+---
 
-    ```bash
-    helm upgrade --install axway-mcp ./helm/axway-mcp -n apim-mcp --create-namespace \
-      --set secrets.name=axway-mcp-credentials \
-      --set env.MCP_AUTH_MODE=oidc \
-      --set env.OIDC_ISSUER=https://idp.example.com/realms/apim-mcp \
-      --set env.OIDC_AUDIENCE=apim-mcp-api \
-      --set-string env.MCP_RESOURCE_URL=http://seu-lb \
-      --set env.AXWAY_GATEWAY_URL="https://seu-gateway:8090/api" \
-      --set env.AXWAY_MANAGER_URL="https://seu-manager:8075/api/portal/v1.4"
-    ```
+## Licença
 
-4.  **Actualizar credenciais** sem redeploy do chart (só o Secret + restart):
-
-    ```bash
-    kubectl -n apim-mcp create secret generic axway-mcp-credentials \
-      --from-literal=AXWAY_GATEWAY_USERNAME='...' \
-      --from-literal=AXWAY_GATEWAY_PASSWORD='...' \
-      --from-literal=AXWAY_MANAGER_USERNAME='...' \
-      --from-literal=AXWAY_MANAGER_PASSWORD='...' \
-      --dry-run=client -o yaml | kubectl apply -f -
-    kubectl -n apim-mcp rollout restart deploy/axway-mcp
-    ```
-
-#### Lab AKS (referência genérica)
-
-Exemplo de nomes: release `axway-mcp`, namespace `apim-mcp`, Secret `axway-mcp-credentials`, `MCP_AUTH_MODE=oidc`. Substitui imagem, issuer e URLs Axway pelos do teu ambiente — **sem** colocar secrets no git.
+ISC — ver `package.json`.
