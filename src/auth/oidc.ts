@@ -12,6 +12,7 @@
 
 import { IncomingMessage, ServerResponse } from "node:http";
 import { createRemoteJWKSet, jwtVerify, JWTPayload } from "jose";
+import { SCOPES_SUPPORTED, scopeSatisfied } from "./tool-scopes.js";
 
 export type AuthMode = "none" | "oidc";
 
@@ -53,7 +54,14 @@ export function loadAuthConfig(): AuthConfig {
   const rawMode = (process.env.MCP_AUTH_MODE || "none").toLowerCase();
   const mode: AuthMode = rawMode === "oidc" ? "oidc" : "none";
 
-  const requiredScopes = (process.env.MCP_REQUIRED_SCOPES || "")
+  // Entry gate: default mcp:observe when OIDC is on (hierarchical — admin/operator also satisfy).
+  const rawRequired =
+    process.env.MCP_REQUIRED_SCOPES !== undefined
+      ? process.env.MCP_REQUIRED_SCOPES
+      : mode === "oidc"
+        ? "mcp:observe"
+        : "";
+  const requiredScopes = rawRequired
     .split(/[,\s]+/)
     .map((s) => s.trim())
     .filter(Boolean);
@@ -185,10 +193,12 @@ export async function verifyAccessToken(token: string): Promise<AuthInfo> {
   }
 
   const scopes = extractScopes(payload);
-  const missing = config.requiredScopes.filter((s) => !scopes.includes(s));
+  const missing = config.requiredScopes.filter(
+    (s) => !scopeSatisfied(scopes, s)
+  );
   if (missing.length > 0) {
     const err = new Error(
-      `Insufficient scope. Missing: ${missing.join(", ")}`
+      `Insufficient scope. Missing: ${missing.join(", ")} (have: ${scopes.join(" ") || "none"}; mcp:operator/mcp:admin/mcp:tools also satisfy mcp:observe)`
     ) as Error & { code?: string };
     err.code = "insufficient_scope";
     throw err;
@@ -285,9 +295,7 @@ export function handleWellKnown(
     resource: config.resourceUrl || config.audience,
     authorization_servers: [config.issuer],
     bearer_methods_supported: ["header"],
-    scopes_supported: config.requiredScopes.length
-      ? config.requiredScopes
-      : ["mcp:tools"],
+    scopes_supported: SCOPES_SUPPORTED,
     resource_documentation:
       "https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization",
   };

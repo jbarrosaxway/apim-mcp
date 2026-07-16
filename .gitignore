@@ -1,3 +1,7 @@
 node_modules
 .env
 .cursor/mcp.json
+vendor/
+.playwright-mcp/
+tmp/
+*.zip

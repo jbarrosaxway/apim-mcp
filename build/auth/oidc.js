@@ -10,6 +10,7 @@
  * The MCP server never opens a browser; the MCP client drives Authorization Code + PKCE.
  */
 import { createRemoteJWKSet, jwtVerify } from "jose";
+import { SCOPES_SUPPORTED, scopeSatisfied } from "./tool-scopes.js";
 let cachedConfig = null;
 let jwks = null;
 let resolvedJwksUri = null;
@@ -27,7 +28,13 @@ export function loadAuthConfig() {
     }
     const rawMode = (process.env.MCP_AUTH_MODE || "none").toLowerCase();
     const mode = rawMode === "oidc" ? "oidc" : "none";
-    const requiredScopes = (process.env.MCP_REQUIRED_SCOPES || "")
+    // Entry gate: default mcp:observe when OIDC is on (hierarchical — admin/operator also satisfy).
+    const rawRequired = process.env.MCP_REQUIRED_SCOPES !== undefined
+        ? process.env.MCP_REQUIRED_SCOPES
+        : mode === "oidc"
+            ? "mcp:observe"
+            : "";
+    const requiredScopes = rawRequired
         .split(/[,\s]+/)
         .map((s) => s.trim())
         .filter(Boolean);
@@ -133,9 +140,9 @@ export async function verifyAccessToken(token) {
         throw err;
     }
     const scopes = extractScopes(payload);
-    const missing = config.requiredScopes.filter((s) => !scopes.includes(s));
+    const missing = config.requiredScopes.filter((s) => !scopeSatisfied(scopes, s));
     if (missing.length > 0) {
-        const err = new Error(`Insufficient scope. Missing: ${missing.join(", ")}`);
+        const err = new Error(`Insufficient scope. Missing: ${missing.join(", ")} (have: ${scopes.join(" ") || "none"}; mcp:operator/mcp:admin/mcp:tools also satisfy mcp:observe)`);
         err.code = "insufficient_scope";
         throw err;
     }
@@ -205,9 +212,7 @@ export function handleWellKnown(req, res) {
         resource: config.resourceUrl || config.audience,
         authorization_servers: [config.issuer],
         bearer_methods_supported: ["header"],
-        scopes_supported: config.requiredScopes.length
-            ? config.requiredScopes
-            : ["mcp:tools"],
+        scopes_supported: SCOPES_SUPPORTED,
         resource_documentation: "https://modelcontextprotocol.io/specification/2025-11-25/basic/authorization",
     };
     res.writeHead(200, {

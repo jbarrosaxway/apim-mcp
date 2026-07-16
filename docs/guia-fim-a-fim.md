@@ -139,7 +139,7 @@ docker run -d --name axway-mcp -p 8080:3000 \
   -e OIDC_ISSUER=https://idp.exemplo/realms/apim-mcp \
   -e OIDC_AUDIENCE=apim-mcp-api \
   -e MCP_RESOURCE_URL=http://localhost:8080 \
-  -e MCP_REQUIRED_SCOPES=mcp:tools \
+  -e MCP_REQUIRED_SCOPES=mcp:observe \
   -e AXWAY_TLS_REJECT_UNAUTHORIZED=false \
   -e AXWAY_GATEWAY_URL=https://anm.exemplo/api \
   -e AXWAY_GATEWAY_USERNAME=admin \
@@ -205,7 +205,7 @@ helm upgrade --install axway-mcp ./helm/axway-mcp -n apim-mcp \
   --set-string env.OIDC_ISSUER='https://idp.exemplo/realms/apim-mcp' \
   --set env.OIDC_AUDIENCE=apim-mcp-api \
   --set-string env.MCP_RESOURCE_URL='http://<EXTERNAL-IP-OU-DNS>' \
-  --set env.MCP_REQUIRED_SCOPES=mcp:tools
+  --set env.MCP_REQUIRED_SCOPES=mcp:observe
 ```
 
 Obter o IP/DNS do Service e **actualizar** `MCP_RESOURCE_URL` se necessário:
@@ -227,7 +227,7 @@ Se a imagem estiver num registry privado, configurar `imagePullSecrets`.
 
 1. Realm / tenant (ex.: `apim-mcp`)  
 2. Audience / API resource → `OIDC_AUDIENCE` (ex.: `apim-mcp-api`)  
-3. Scope `mcp:tools`  
+3. Scopes `mcp:observe` / `mcp:operator` / `mcp:admin` (legado `mcp:tools` = admin)  
 4. Client **público** + PKCE para o Cursor (ex.: `mcp-cursor`)  
 5. Redirect URIs do Cursor:
    - `http://localhost:8787/callback`
@@ -247,7 +247,7 @@ IdP de exemplo: `https://idp.example.com/`
 | Password | `replace-me` |
 | Client Cursor | `mcp-cursor` (público) |
 | Audience | `apim-mcp-api` |
-| Scope | `mcp:tools` |
+| Scopes | `mcp:observe` (+ operator/admin/tools) — **default** no client; vêm da role do user |
 | Client smoke | `mcp-test-cli` / secret `replace-me-client-secret` |
 
 Provisionar (password admin **só** via parâmetro/env, nunca no repositório):
@@ -265,10 +265,30 @@ Issuer no MCP:
 ```bash
 OIDC_ISSUER=https://idp.example.com/realms/apim-mcp
 OIDC_AUDIENCE=apim-mcp-api
-MCP_REQUIRED_SCOPES=mcp:tools
+MCP_REQUIRED_SCOPES=mcp:observe
 ```
 
 Outros IdPs: [oidc-idps.md](oidc-idps.md).
+
+### 9.3 Matriz de autorização (tool × perfil)
+
+Hierarquia: **`mcp:admin` ⊃ `mcp:operator` ⊃ `mcp:observe`**. Legado: **`mcp:tools` = admin**.
+
+| Perfil | Tools | Negadas |
+|--------|------:|--------:|
+| `mcp:observe` | 25 | 24 |
+| `mcp:operator` | 30 | 19 |
+| `mcp:admin` | 49 | 0 |
+
+**observe** — `axway_apim_time_get`, `axway_apim_config_get`, `axway_apim_topology_list`, tráfego/métricas (`axway_apim_instancetraffic_get`, `axway_apim_servicetraffic_get`, `axway_apim_metrics_get`, `axway_apim_traffic_search`, `axway_apim_trafficevent_*`), list/get de orgs/users/apps/proxies/backend/access/alerts/quotas, `axway_apim_catalog_get`, `axway_apim_proxyauth_get`, `axway_apim_permission_get`.
+
+**operator** (+ observe) — `axway_apim_proxy_update` (incl. `lifecycle=publish|unpublish|deprecate`), `axway_apim_alert_update`, `axway_apim_quota_update`.
+
+**admin** (+ operator) — create/update/delete orgs/users/proxies; import/delete backend; `grant`/`revoke` access; `get_api_keys_*`, `create_api_key`, `get_oauth_*`, `create_oauth_credential`, `upload_file_for_import`.
+
+Mapa literal no código: [`src/auth/tool-scopes.ts`](../src/auth/tool-scopes.ts).
+
+stdio (sem OIDC): `MCP_TOOL_PROFILE=observe|operator|admin` (default `admin`).
 
 ---
 
@@ -283,18 +303,20 @@ Em `.cursor/mcp.json` ou Settings → Tools & MCP:
       "url": "http://<HOST-OU-IP-DO-MCP>",
       "auth": {
         "CLIENT_ID": "mcp-cursor",
-        "scopes": ["openid", "profile", "mcp:tools"]
+        "scopes": ["openid", "profile"]
       }
     }
   }
 }
 ```
 
+O client `mcp-cursor` tem os scopes MCP como **default**; o IdP inclui só o que a **role** do user permitir. Não pedes `mcp:observe` / `mcp:admin` no Cursor.
+
 1. **Connect** / autenticar no servidor.  
 2. Browser abre o Keycloak → realm **`apim-mcp`**.  
-3. Login com o user de teste do teu IdP (ex.: `mcp-tester` / `replace-me`).  
-4. Volta ao Cursor; as tools Axway aparecem na lista MCP.  
-5. Testar: *“lista a topologia”*, *“lista as organizações”*.
+3. Login com o user de teste (ex.: `mcp-observer` = só leitura, `mcp-admin` = tudo).  
+4. Volta ao Cursor; as tools Axway aparecem filtradas pelo perfil do token.  
+5. Testar: *“lista a topologia”*. Com observer, `axway_apim_proxy_update` / `axway_apim_organization_delete` devem ser recusados.
 
 Documentação Cursor: [cursor.com/docs/mcp](https://cursor.com/docs/mcp).
 
@@ -320,8 +342,8 @@ TOKEN=$(curl -s -X POST \
   'https://idp.example.com/realms/apim-mcp/protocol/openid-connect/token' \
   -d 'grant_type=password' -d 'client_id=mcp-test-cli' \
   -d 'client_secret=replace-me-client-secret' \
-  -d 'username=mcp-tester' -d 'password=replace-me' \
-  -d 'scope=openid mcp:tools' | jq -r .access_token)
+  -d 'username=mcp-observer' -d 'password=replace-me' \
+  -d 'scope=openid' | jq -r .access_token)
 
 # initialize
 curl -s -D - -X POST "http://<MCP>/" \
@@ -361,7 +383,7 @@ Procura: `[Auth] MCP_AUTH_MODE=oidc`, `tools/call`, ausência de erros de API Ax
 - [ ] HTTP: `MCP_AUTH_MODE=oidc` + issuer/audience/resource/scopes  
 - [ ] Client OIDC com PKCE + redirect URIs Cursor  
 - [ ] Cursor com `url` + `auth.CLIENT_ID` → Connect → login  
-- [ ] Smoke `list_topology` / `list_organizations` OK  
+- [ ] Smoke `axway_apim_topology_list` / `axway_apim_organization_list` OK
 
 ---
 
@@ -372,7 +394,7 @@ Procura: `[Auth] MCP_AUTH_MODE=oidc`, `tools/call`, ausência de erros de API Ax
 | Cursor 401 / não conecta | Token/OIDC: ver issuer, audience, redirects; `GET /.well-known/oauth-protected-resource` |
 | Login Keycloak falha | Realm `apim-mcp`, user `mcp-tester`, password correcta |
 | Tools falham com erro Axway | Secret / URLs; testar `curl -u` nas APIs; cert TLS |
-| `insufficient_scope` | Scope `mcp:tools` em falta no token |
+| `insufficient_scope` | Scope de perfil em falta (precisa ≥ `mcp:observe`) |
 | Audience mismatch | `aud` do JWT ≠ `OIDC_AUDIENCE` |
 | Pod com env antigas | `rollout restart` após alterar Secret |
 | stdio “não encontra build” | Correr `npm run build`; path absoluto no `mcp.json` |

@@ -90,12 +90,12 @@ export async function listApiProxies(api) {
             message: `Encontrados ${proxies.length} proxies de API.`,
             relatedTools: [
                 ...proxies.map((p) => ({
-                    tool_name: 'get_api_proxy',
+                    tool_name: 'axway_apim_proxy_get',
                     description: `Obter detalhes de troubleshooting para o proxy '${p.name}'.`,
                     parameters: [{ name: 'id', value: p.id }]
                 })),
                 {
-                    tool_name: 'list_backend_apis',
+                    tool_name: 'axway_apim_backend_list',
                     description: 'Listar APIs de backend, necessário para criar um novo proxy.',
                     parameters: []
                 }
@@ -106,6 +106,25 @@ export async function listApiProxies(api) {
         console.error(`Erro ao listar proxies de API:`, error);
         throw error;
     }
+}
+/**
+ * Catálogo consumer-facing: apenas proxies em estado published.
+ */
+export async function getApiCatalog(api) {
+    const all = await listApiProxies(api);
+    const published = (all.apiProxies || []).filter((p) => String(p.state || "").toLowerCase() === "published");
+    return {
+        count: published.length,
+        catalog: published,
+        message: `Catálogo: ${published.length} API(s) published (use axway_apim_proxy_list for all lifecycle states).`,
+        relatedTools: [
+            {
+                tool_name: "axway_apim_proxy_list",
+                description: "Full admin inventory including unpublished/deprecated proxies.",
+                parameters: [],
+            },
+        ],
+    };
 }
 /**
  * Ferramenta para obter informações específicas de autenticação de um proxy de API.

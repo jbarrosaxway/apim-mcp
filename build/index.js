@@ -15,11 +15,19 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { createServer } from "node:http";
+import { ListToolsRequestSchema } from "@modelcontextprotocol/sdk/types.js";
 import { randomUUID } from "crypto";
+import { z } from "zod";
+import { zodToJsonSchema } from "zod-to-json-schema";
 import { tools } from "./tools.js";
 import { AxwayApi } from "./api.js";
 import * as dotenv from 'dotenv';
 import { authenticateHttpRequest, handleWellKnown, loadAuthConfig, logAuthStartup, } from "./auth/oidc.js";
+import { authInfoFromProfile, getAuthScopes, loadStdioToolProfile, runWithAuth, setFallbackAuth, } from "./auth/context.js";
+import { PROFILE_SCOPES, requiredScopeFor, toolAllowed, TOOL_ANNOTATIONS, TOOL_TITLES, } from "./auth/tool-scopes.js";
+import { DIAGNOSE_GATEWAY_PROMPT, SERVER_INSTRUCTIONS, } from "./mcp-guidance.js";
+import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
+const SERVER_VERSION = "1.0.17";
 dotenv.config();
 // All operation imports are correct...
 import * as topology from "./operations/topology.js";
@@ -33,7 +41,6 @@ import * as repository from "./operations/repository.js";
 import * as access from "./operations/access.js";
 import * as alerts from "./operations/alerts.js";
 import * as quotas from "./operations/quotas.js";
-import * as metrics from './operations/metrics.js';
 const SESSION_ID_HEADER_NAME = "mcp-session-id";
 /**
  * Servidor MCP customizado para interagir com o ambiente Axway.
@@ -51,18 +58,121 @@ class AxwayMcpServer extends McpServer {
     constructor(transportMode = 'http') {
         super({
             name: "axway-mcp",
-            version: "1.0.0",
-            description: "Ferramentas para gerenciar e analisar configurações e tráfego do Axway API Gateway"
-        });
+            version: SERVER_VERSION,
+            description: "Axway API Gateway (ANM) + API Manager: diagnóstico (topologia, tráfego, erros, métricas), monitorização e administração APIM",
+        }, { instructions: SERVER_INSTRUCTIONS });
         this.api = new AxwayApi();
         this.transportMode = transportMode;
+        this.registerDiagnosticPrompt();
         this.registerTools();
+        this.registerApimResources();
+        this.installScopedToolsListHandler();
         // Apenas configurar limpeza de sessões se estiver no modo HTTP
         if (this.transportMode === 'http') {
             setInterval(() => {
                 this.cleanupOldSessions();
             }, 5 * 60 * 1000);
         }
+    }
+    /** MCP prompt: playbook explícito para perguntas de saúde/problema no Gateway. */
+    registerDiagnosticPrompt() {
+        this.registerPrompt("axway_apim_gateway_diagnose", {
+            title: "Diagnosticar API Gateway Axway",
+            description: "Use when the user asks whether the Axway API Gateway/ANM has a problem, failure, outage, errors, or latency. Chains axway_apim_topology_list → metrics → traffic search → proxies. Side effects: none (read-only guidance). Sibling: call the named tools directly for ad-hoc checks.",
+            argsSchema: {
+                symptom: z
+                    .string()
+                    .optional()
+                    .describe("Natural-language symptom (e.g. HTTP 500, slow responses)"),
+                timeWindow: z
+                    .string()
+                    .optional()
+                    .describe("Event lookback window such as 1h or 24h; default 1h"),
+            },
+        }, async ({ symptom, timeWindow }) => {
+            const text = DIAGNOSE_GATEWAY_PROMPT.replace("{{symptom}}", symptom || "(não especificado)").replace("{{timeWindow}}", timeWindow || "1h");
+            return {
+                messages: [{ role: "user", content: { type: "text", text } }],
+            };
+        });
+    }
+    /** Minimal axway://apim resources for URI-addressable live reads. */
+    registerApimResources() {
+        const readJson = (data) => ({
+            contents: [
+                {
+                    uri: "",
+                    mimeType: "application/json",
+                    text: JSON.stringify(data, null, 2),
+                },
+            ],
+        });
+        this.resource("apim_topology", "axway://apim/topology", {
+            description: "Live Gateway topology snapshot including groups, instances, current instance identifiers, and product version. Data shape matches the axway_apim_topology_list tool output and is intended for URI-based context attachment. Always refresh after Kubernetes or Docker pod restarts because instance identifiers rotate. This is a live read against ANM, not a historical snapshot store. On 5xx or network timeouts retry with exponential backoff; on empty topology verify AXWAY_GATEWAY_URL before repeating.",
+            mimeType: "application/json",
+        }, async (uri) => {
+            const data = await topology.listTopology(this.api);
+            const result = readJson(data);
+            result.contents[0].uri = uri.href;
+            return result;
+        });
+        this.resource("apim_proxies", "axway://apim/proxies", {
+            description: "Live inventory of frontend API proxies with id, path, and lifecycle state for attaching catalog context by URI. Prefer axway_apim_proxy_list or axway_apim_catalog_get when the agent needs filtered workflows or sibling disambiguation. This resource returns a live Manager read, not a cached offline export. Retry transient 5xx with backoff; fix Manager credentials on 401/403 instead of blind retries. Use axway://apim/proxies/{id} for a single proxy detail document.",
+            mimeType: "application/json",
+        }, async (uri) => {
+            const data = await proxies.listApiProxies(this.api);
+            const result = readJson(data);
+            result.contents[0].uri = uri.href;
+            return result;
+        });
+        this.resource("apim_proxy", new ResourceTemplate("axway://apim/proxies/{id}", {
+            list: undefined,
+        }), {
+            description: "Live troubleshooting detail for one frontend API proxy addressed by id in the URI path. The JSON shape matches axway_apim_proxy_get including security and authenticationInfo.fieldName hints for client headers. Obtain ids from axway://apim/proxies or axway_apim_proxy_list first. This is a live Manager read; missing ids return not-found rather than stale cache. Retry 5xx with backoff; do not retry 404 without a new id.",
+            mimeType: "application/json",
+        }, async (uri, variables) => {
+            const id = String(variables.id || "");
+            const data = await proxies.getApiProxy(this.api, id);
+            const result = readJson(data);
+            result.contents[0].uri = uri.href;
+            return result;
+        });
+        this.resource("apim_instance_traffic", new ResourceTemplate("axway://apim/instances/{instance_id}/traffic", {
+            list: undefined,
+        }), {
+            description: "Live aggregate traffic counters for one Gateway instance identified by instance_id in the URI. Resolve instance_id from axway://apim/topology or axway_apim_topology_list immediately before reading because containerized deployments rotate identifiers after restart. Data shape aligns with axway_apim_instancetraffic_get. This is a live metrics read, not a stored timeseries archive. On empty or not-found results refresh topology then retry once; use exponential backoff for 5xx.",
+            mimeType: "application/json",
+        }, async (uri, variables) => {
+            const instanceId = String(variables.instance_id || variables.instanceId || "");
+            const data = await monitoring.getInstanceTraffic(this.api, instanceId);
+            const result = readJson(data);
+            result.contents[0].uri = uri.href;
+            return result;
+        });
+    }
+    /**
+     * Substitui tools/list para anunciar apenas tools permitidas pelo scope efectivo,
+     * incluindo annotations Axway (I13–I17).
+     */
+    installScopedToolsListHandler() {
+        this.server.setRequestHandler(ListToolsRequestSchema, () => {
+            const scopes = getAuthScopes();
+            const allowed = tools().filter((t) => toolAllowed(t.method, scopes));
+            return {
+                tools: allowed.map((t) => {
+                    const schema = zodToJsonSchema(z.object(t.parameters), {
+                        strictUnions: true,
+                    });
+                    return {
+                        name: t.method,
+                        title: TOOL_TITLES[t.method],
+                        description: t.description,
+                        inputSchema: schema,
+                        annotations: TOOL_ANNOTATIONS[t.method],
+                    };
+                }),
+            };
+        });
     }
     cleanupOldSessions() {
         const now = Date.now();
@@ -197,172 +307,186 @@ class AxwayMcpServer extends McpServer {
      */
     registerTools() {
         tools().forEach(tool => {
-            this.tool(tool.method, tool.description, tool.parameters, async (args) => {
+            const annotations = TOOL_ANNOTATIONS[tool.method] || {
+                readOnlyHint: false,
+                destructiveHint: false,
+                idempotentHint: false,
+                openWorldHint: true,
+            };
+            this.tool(tool.method, tool.description, tool.parameters, annotations, async (args) => {
                 try {
+                    const scopes = getAuthScopes();
+                    if (!toolAllowed(tool.method, scopes)) {
+                        const need = requiredScopeFor(tool.method);
+                        console.warn(`[Authz] Denied tool=${tool.method} need=${need} scopes=${scopes.join(" ") || "(none)"}`);
+                        return {
+                            content: [{
+                                    type: 'text',
+                                    text: JSON.stringify({
+                                        error: `Forbidden: requires scope ${need} (or higher). Have: ${scopes.join(" ") || "(none)"}. Hierarchy: ${PROFILE_SCOPES.admin} ⊃ ${PROFILE_SCOPES.operator} ⊃ ${PROFILE_SCOPES.observe}. Retry after obtaining a token with the required scope; do not retry the same call with identical credentials.`,
+                                    }),
+                                }],
+                            isError: true,
+                        };
+                    }
                     let result;
-                    // O switch case roteia a chamada da ferramenta para a implementação correta.
                     switch (tool.method) {
-                        // system.ts
-                        case "get_mcp_server_time":
+                        case "axway_apim_time_get":
                             result = await system.getMcpServerTime();
                             break;
-                        case "get_manager_config":
+                        case "axway_apim_config_get":
                             result = await system.getManagerConfig();
                             break;
-                        // topology.ts
-                        case "list_topology":
+                        case "axway_apim_topology_list":
                             result = await topology.listTopology(this.api);
                             break;
-                        // monitoring.ts
-                        case "get_instance_traffic":
+                        case "axway_apim_instancetraffic_get":
                             result = await monitoring.getInstanceTraffic(this.api, args.instanceId);
                             break;
-                        case "get_service_traffic":
+                        case "axway_apim_servicetraffic_get":
                             result = await monitoring.getServiceTraffic(this.api, args.instanceId, args.serviceName);
                             break;
-                        case "get_instance_metrics_timeline":
+                        case "axway_apim_metrics_get":
                             result = await monitoring.getInstanceMetricsTimeline(this.api, args.instanceId, args.timeline, args.metricTypes);
                             break;
-                        case "search_traffic_events":
+                        case "axway_apim_traffic_search":
                             result = await monitoring.searchTrafficEvents(this.api, args);
                             break;
-                        case "get_traffic_event_details":
+                        case "axway_apim_trafficevent_get":
                             result = await monitoring.getTrafficEventDetails(this.api, args);
                             break;
-                        case "get_traffic_event_payload":
+                        case "axway_apim_trafficpayload_get":
                             result = await monitoring.getTrafficEventPayload(this.api, args);
                             break;
-                        case "get_traffic_event_trace":
+                        case "axway_apim_traffictrace_get":
                             result = await monitoring.getTrafficEventTrace(this.api, args);
                             break;
-                        // organizations.ts
-                        case "list_organizations":
+                        case "axway_apim_organization_list":
                             result = await organizations.listOrganizations(this.api);
                             break;
-                        case "get_organization":
+                        case "axway_apim_organization_get":
                             result = await organizations.getOrganization(this.api, args.id);
                             break;
-                        case "create_organization":
+                        case "axway_apim_organization_create":
                             result = await organizations.createOrganization(this.api, args.name, args.description, args.email, args.phone, args.enabled);
                             break;
-                        case "update_organization":
+                        case "axway_apim_organization_update":
                             result = await organizations.updateOrganization(this.api, args.id, args.name, args.description, args.email, args.phone, args.enabled);
                             break;
-                        case "delete_organization":
+                        case "axway_apim_organization_delete":
                             result = await organizations.deleteOrganization(this.api, args.id);
                             break;
-                        // users.ts
-                        case "list_users":
+                        case "axway_apim_user_list":
                             result = await users.listUsers(this.api);
                             break;
-                        case "get_user":
+                        case "axway_apim_user_get":
                             result = await users.getUser(this.api, args.id);
                             break;
-                        case "create_user":
+                        case "axway_apim_user_create":
                             result = await users.createUser(this.api, args.organizationId, args.name, args.loginName, args.role, args.email, args.phone);
                             break;
-                        case "update_user":
+                        case "axway_apim_user_update":
                             result = await users.updateUser(this.api, args.id, args.name, args.loginName, args.email, args.phone, args.role, args.enabled, args.organizationId);
                             break;
-                        case "delete_user":
+                        case "axway_apim_user_delete":
                             result = await users.deleteUser(this.api, args.id);
                             break;
-                        // applications.ts
-                        case "list_applications":
+                        case "axway_apim_application_list":
                             result = await applications.listApplications(this.api);
                             break;
-                        case "get_application":
+                        case "axway_apim_application_get":
                             result = await applications.getApplication(this.api, args.id);
                             break;
-                        case "get_api_keys_for_application":
+                        case "axway_apim_apikey_get":
                             result = await applications.getApiKeysForApplication(this.api, args.id);
                             break;
-                        case "create_api_key":
+                        case "axway_apim_apikey_create":
                             result = await applications.createApiKey(this.api, args.appId, args.enabled, args.secret);
                             break;
-                        case "get_oauth_credentials_for_application":
+                        case "axway_apim_oauth_get":
                             result = await applications.getOAuthCredentialsForApplication(this.api, args.id);
                             break;
-                        case "create_oauth_credential":
+                        case "axway_apim_oauth_create":
                             result = await applications.createOAuthCredential(this.api, args.appId, args.redirectURIs, args.cert);
                             break;
-                        case "get_permissions_for_application":
+                        case "axway_apim_permission_get":
                             result = await applications.getPermissionsForApplication(this.api, args.id);
                             break;
-                        // proxies.ts
-                        case "list_api_proxies":
+                        case "axway_apim_proxy_list":
                             result = await proxies.listApiProxies(this.api);
                             break;
-                        case "get_api_proxy":
+                        case "axway_apim_proxy_get":
                             result = await proxies.getApiProxy(this.api, args.id);
                             break;
-                        case "get_proxy_authentication_info":
+                        case "axway_apim_proxyauth_get":
                             result = await proxies.getProxyAuthenticationInfo(this.api, args.id);
                             break;
-                        case "create_api_proxy":
+                        case "axway_apim_proxy_create":
                             result = await proxies.createApiProxy(this.api, args.name, args.path, args.apiId, args.organizationId);
                             break;
-                        case "update_api_proxy":
-                            result = await proxies.updateApiProxy(this.api, args.id, args.name, args.path, args.apiId);
+                        case "axway_apim_proxy_update":
+                            if (args.lifecycle === "publish") {
+                                result = await proxies.publishApi(this.api, args.id);
+                            }
+                            else if (args.lifecycle === "unpublish") {
+                                result = await proxies.unpublishApi(this.api, args.id);
+                            }
+                            else if (args.lifecycle === "deprecate") {
+                                result = await proxies.deprecateApi(this.api, args.id);
+                            }
+                            else {
+                                result = await proxies.updateApiProxy(this.api, args.id, args.name, args.path, args.apiId);
+                            }
                             break;
-                        case "delete_api_proxy":
+                        case "axway_apim_proxy_delete":
                             result = await proxies.deleteApiProxy(this.api, args.id);
                             break;
-                        case "publish_api":
-                            result = await proxies.publishApi(this.api, args.id);
-                            break;
-                        case "unpublish_api":
-                            result = await proxies.unpublishApi(this.api, args.id);
-                            break;
-                        case "deprecate_api":
-                            result = await proxies.deprecateApi(this.api, args.id);
-                            break;
-                        // repository.ts
-                        case "list_backend_apis":
+                        case "axway_apim_backend_list":
                             result = await repository.listBackendApis(this.api);
                             break;
-                        case "import_backend_api_from_url":
-                            result = await repository.importBackendApiFromUrl(this.api, args.url, args.organizationId, args.name);
+                        case "axway_apim_backend_submit":
+                            if (args.source === "file") {
+                                if (!args.filePath) {
+                                    throw new Error("filePath is required when source=file");
+                                }
+                                result = await repository.importBackendApiFromFile(this.api, args.filePath, args.organizationId, args.name);
+                            }
+                            else {
+                                if (!args.url) {
+                                    throw new Error("url is required when source=url");
+                                }
+                                result = await repository.importBackendApiFromUrl(this.api, args.url, args.organizationId, args.name);
+                            }
                             break;
-                        case "delete_backend_api":
+                        case "axway_apim_backend_delete":
                             result = await repository.deleteBackendApi(this.api, args.id);
                             break;
-                        case "import_backend_api_from_file":
-                            result = await repository.importBackendApiFromFile(this.api, args.filePath, args.organizationId, args.name);
-                            break;
-                        case "upload_file_for_import":
+                        case "axway_apim_file_submit":
                             result = await repository.uploadFileForImport(args);
                             break;
-                        // access.ts
-                        case "list_api_access":
+                        case "axway_apim_access_list":
                             result = await access.listApiAccess(this.api, args.applicationId);
                             break;
-                        case "grant_api_access":
+                        case "axway_apim_access_update":
                             result = await access.grantApiAccess(this.api, args.applicationId, args.apiId);
                             break;
-                        case "revoke_api_access":
+                        case "axway_apim_access_delete":
                             result = await access.revokeApiAccess(this.api, args.applicationId, args.apiId);
                             break;
-                        // alerts.ts
-                        case "list_alerts":
+                        case "axway_apim_alert_list":
                             result = await alerts.listAlerts(this.api);
                             break;
-                        case "update_alert_settings":
+                        case "axway_apim_alert_update":
                             result = await alerts.updateAlertSettings(this.api, args.settings);
                             break;
-                        // quotas.ts
-                        case "get_application_quotas":
+                        case "axway_apim_quota_get":
                             result = await quotas.getApplicationQuotas(this.api, args.applicationId);
                             break;
-                        case "update_application_quotas":
+                        case "axway_apim_quota_update":
                             result = await quotas.updateApplicationQuotas(this.api, args.applicationId, args.messages_per_second);
                             break;
-                        case "get_api_catalog":
-                            result = await proxies.listApiProxies(this.api); // Alias for list_api_proxies
-                            break;
-                        // metrics.ts
-                        case "get_metrics":
-                            result = await metrics.getMetrics(this.api, args);
+                        case "axway_apim_catalog_get":
+                            result = await proxies.getApiCatalog(this.api);
                             break;
                         default:
                             throw new Error(`Tool '${tool.method}' is defined but not implemented in the server.`);
@@ -376,7 +500,6 @@ class AxwayMcpServer extends McpServer {
                 }
                 catch (error) {
                     console.error(`Error executing tool '${tool.method}':`, error);
-                    // Função para extrair informações seguras do erro sem referências circulares
                     const getSafeErrorMessage = (err) => {
                         if (err?.response?.data?.errors?.[0]?.message) {
                             return err.response.data.errors[0].message;
@@ -395,12 +518,21 @@ class AxwayMcpServer extends McpServer {
                         }
                         return "An unknown error occurred.";
                     };
+                    const status = error?.response?.status;
                     const errorMessage = getSafeErrorMessage(error);
-                    // Retornar um erro estruturado para o LLM
+                    const retryHint = status && status >= 500
+                        ? "Retryable: use exponential backoff on 5xx/network timeouts."
+                        : status && status >= 400 && status < 500
+                            ? "Not retryable as-is: fix parameters or authorization before retrying."
+                            : "If the failure looks transient (timeout/network), retry with exponential backoff; otherwise fix inputs.";
                     return {
                         content: [{
                                 type: 'text',
-                                text: JSON.stringify({ error: `Execution failed: ${errorMessage}` })
+                                text: JSON.stringify({
+                                    error: `Execution failed: ${errorMessage}`,
+                                    httpStatus: status || null,
+                                    retry: retryHint,
+                                })
                             }]
                     };
                 }
@@ -420,8 +552,11 @@ async function main() {
     const transportMode = useStdio ? 'stdio' : 'http';
     const server = new AxwayMcpServer(transportMode);
     if (transportMode === 'stdio') {
-        // Modo stdio: comunicação direta via stdin/stdout
-        console.error('Axway MCP Server iniciado em modo stdio');
+        // Modo stdio: perfil via MCP_TOOL_PROFILE (default admin); sem OIDC
+        const profile = loadStdioToolProfile();
+        const stdioAuth = authInfoFromProfile(profile);
+        setFallbackAuth(stdioAuth);
+        console.error(`Axway MCP Server iniciado em modo stdio (MCP_TOOL_PROFILE=${profile})`);
         const stdioTransport = new StdioServerTransport();
         stdioTransport.onclose = () => {
             console.error('Conexão stdio fechada');
@@ -432,7 +567,7 @@ async function main() {
             process.exit(1);
         };
         // connect() já chama start() automaticamente
-        await server.connect(stdioTransport);
+        await runWithAuth(stdioAuth, () => server.connect(stdioTransport));
         console.error('Axway MCP Server pronto para comunicação via stdio');
     }
     else {
@@ -440,6 +575,8 @@ async function main() {
         // Fail-fast se OIDC estiver mal configurado
         loadAuthConfig();
         logAuthStartup();
+        // MCP_AUTH_MODE=none → getAuthScopes trata null como admin
+        setFallbackAuth(null);
         const port = process.env.PORT || 3000;
         const httpServer = createServer((req, res) => {
             // RFC 9728 Protected Resource Metadata (sem autenticação)
@@ -451,7 +588,8 @@ async function main() {
                 if (authResult === false) {
                     return; // 401/403 já escrito
                 }
-                await server.handleRequest(req, res);
+                // authResult is AuthInfo | null (null = auth disabled)
+                await runWithAuth(authResult, () => server.handleRequest(req, res));
             })().catch(err => {
                 console.error("Error handling request:", err);
                 if (!res.writableEnded) {

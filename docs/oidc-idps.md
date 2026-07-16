@@ -16,7 +16,7 @@ Qualquer IdP compatível com **OpenID Connect** (discovery + JWKS + access token
 | JWKS | Endpoint de chaves públicas (`jwks_uri` no discovery) |
 | Access token JWT | O MCP valida o Bearer com `jose` (não usa introspection) |
 | Audience (`aud`) | Claim que corresponde a `OIDC_AUDIENCE` (ou `MCP_RESOURCE_URL`) |
-| Scopes | Claim `scope` (string) ou `scp` (array); o MCP exige `MCP_REQUIRED_SCOPES` |
+| Scopes | Claim `scope` / `scp`; gate de entrada default `mcp:observe` (hierárquico: operator/admin/tools também satisfazem); autorização **por tool** via perfil |
 
 Discovery típico:
 
@@ -35,9 +35,20 @@ MCP_AUTH_MODE=oidc
 OIDC_ISSUER=https://<seu-idp>/...          # sem barra final
 OIDC_AUDIENCE=<audience-do-api-resource>   # deve bater no aud do JWT
 MCP_RESOURCE_URL=https://<url-publica-do-mcp>  # URI canónica (RFC 9728)
-MCP_REQUIRED_SCOPES=mcp:tools              # opcional mas recomendado
+MCP_REQUIRED_SCOPES=mcp:observe            # gate mínimo (default se omitido em oidc)
+# Perfis: mcp:observe | mcp:operator | mcp:admin (legado mcp:tools = admin)
 # OIDC_JWKS_URI=...                        # só se o discovery não bastar
 ```
+
+### Perfis e tools
+
+| Scope OIDC | Tools (resumo) |
+|------------|----------------|
+| `mcp:observe` | 25 — leitura (topologia, tráfego/logs, list/get; **sem** API keys/OAuth secrets) |
+| `mcp:operator` | 30 — observe + publish/unpublish/deprecate + update cotas/alertas |
+| `mcp:admin` / `mcp:tools` | 49 — tudo (CRUD, import, credenciais) |
+
+Mapa literal: [`src/auth/tool-scopes.ts`](../src/auth/tool-scopes.ts).
 
 Checklist rápido depois de configurar:
 
@@ -54,7 +65,8 @@ Independente do fornecedor, cria conceptualmente:
 
 1. **API / Resource / Audience** — representa o MCP (ex.: `apim-mcp-api` ou a URL pública).  
    Valor → `OIDC_AUDIENCE`.
-2. **Scope** (ex.: `mcp:tools`) — → `MCP_REQUIRED_SCOPES`.
+2. **Scopes** — `mcp:observe`, `mcp:operator`, `mcp:admin` (e opcionalmente legado `mcp:tools`).  
+   Gate MCP: `MCP_REQUIRED_SCOPES=mcp:observe` (ou superior via hierarquia).
 3. **Client público (PKCE)** — para o Cursor / outros clientes MCP com browser.  
    - Grant: Authorization Code + PKCE (`S256`)  
    - Sem client secret (ou secret só se o cliente for confidential)
@@ -63,7 +75,7 @@ Independente do fornecedor, cria conceptualmente:
    - `http://127.0.0.1:8787/callback`
    - `cursor://anysphere.cursor-mcp/oauth/callback`
    - `https://www.cursor.com/agents/mcp/oauth/callback`
-5. **Utilizadores / grupos** — quem pode obter o scope `mcp:tools`.
+5. **Utilizadores / grupos** — quem pode pedir cada scope (observer vs operator vs admin).
 
 Opcional para testes automatizados: client confidential com *direct access* / *client credentials* **apenas em lab**.
 
@@ -78,12 +90,14 @@ Opcional para testes automatizados: client confidential com *direct access* / *c
       "url": "https://<url-publica-do-mcp>",
       "auth": {
         "CLIENT_ID": "<client-id-publico-do-idp>",
-        "scopes": ["openid", "profile", "mcp:tools"]
+        "scopes": ["openid", "profile"]
       }
     }
   }
 }
 ```
+
+No Keycloak, os scopes MCP são **default client scopes** + role mapping: o user autentica sem pedir `mcp:*`; o token recebe o scope da role (`mcp-observe` → `mcp:observe`, etc.).
 
 - `url` = mesma base usada em `MCP_RESOURCE_URL` (ou o LoadBalancer/Ingress).  
 - Se o IdP exigir client confidential estático, podes acrescentar `CLIENT_SECRET` no bloco `auth` (preferir variáveis de ambiente do SO; não commits).  
@@ -106,19 +120,21 @@ https://<host>/realms/<realm>
 | Objecto Keycloak | Sugestão |
 |------------------|----------|
 | Realm | `apim-mcp` |
-| Client scope | `mcp:tools` + mapper **Audience** → client `apim-mcp-api` |
+| Client scopes | `mcp:observe` / `operator` / `admin` / `tools` como **default** no `mcp-cursor` + role mapping + Audience → `apim-mcp-api` |
 | Client audience | `apim-mcp-api` (`OIDC_AUDIENCE`) |
 | Client público | `mcp-cursor` (Standard flow, PKCE) |
 | Script de lab | `scripts/setup-keycloak-apim-mcp.ps1` |
 
-**User de teste (exemplo / realm `apim-mcp`):**
+**Users de teste (lab):**
 
-| Campo | Valor de exemplo |
-|-------|------------------|
-| Username | `mcp-tester` |
-| Password | `replace-me` |
-| Client Cursor | `mcp-cursor` (público, PKCE) |
-| Client smoke | `mcp-test-cli` / secret `replace-me-client-secret` |
+| Username | Role Keycloak | Scope no token (automático) | Perfil |
+|----------|---------------|-----------------------------|--------|
+| `mcp-observer` | `mcp-observe` | `mcp:observe` | leitura |
+| `mcp-operator` | `mcp-operator` | `mcp:operator` | publish + cotas |
+| `mcp-admin` | `mcp-admin` | `mcp:admin` | admin |
+| `mcp-tester` | `mcp-tools` | `mcp:tools` | legado = admin |
+
+Password exemplo: `replace-me`. Client smoke: `mcp-test-cli` / secret `replace-me-client-secret`.
 
 Substitui pelos valores reais do teu IdP (nunca commits passwords).
 
@@ -127,7 +143,7 @@ Envs:
 ```bash
 OIDC_ISSUER=https://idp.example.com/realms/apim-mcp
 OIDC_AUDIENCE=apim-mcp-api
-MCP_REQUIRED_SCOPES=mcp:tools
+MCP_REQUIRED_SCOPES=mcp:observe
 ```
 
 Runbook Keycloak de exemplo: ver [README](../README.md) e [guia-fim-a-fim.md](guia-fim-a-fim.md).
@@ -138,11 +154,11 @@ Runbook Keycloak de exemplo: ver [README](../README.md) e [guia-fim-a-fim.md](gu
 
 1. **App registration** para a API (o MCP):
    - Expoe um Application ID URI (ex.: `api://apim-mcp` ou a URL do MCP).
-   - Cria um **App role** ou **scope** `mcp:tools` (Expose an API).
+   - Cria scopes/App roles `mcp:observe` (e opcionalmente `mcp:operator`, `mcp:admin`).
 2. **App registration** (ou o mesmo app) para o cliente público Cursor:
    - Platform: Mobile and desktop / SPA conforme o fluxo PKCE do Cursor.
    - Redirect URIs: lista da secção 3.
-   - API permissions: o scope `mcp:tools` da API.
+   - API permissions: o scope do perfil desejado (ex. `mcp:observe`).
 3. Tokens: ensure access token version 2.0 e que `aud` seja o Application ID URI (ou o App ID da API).
 
 Issuer (tenant):
@@ -154,10 +170,10 @@ https://login.microsoftonline.com/<tenant-id>/v2.0
 ```bash
 OIDC_ISSUER=https://login.microsoftonline.com/<tenant-id>/v2.0
 OIDC_AUDIENCE=api://apim-mcp          # ou o Application ID URI exacto no JWT
-MCP_REQUIRED_SCOPES=mcp:tools         # pode aparecer como api://apim-mcp/mcp:tools — alinha o valor real do claim scope
+MCP_REQUIRED_SCOPES=mcp:observe         # se o claim for api://apim-mcp/mcp:observe, usa o valor exacto do JWT
 ```
 
-**Atenção:** no Entra o scope no token costuma ser `api://<app-id-uri>/mcp:tools`. Define `MCP_REQUIRED_SCOPES` com o valor **exacto** que vem no JWT (não só o nome curto).
+**Atenção:** no Entra o scope no token costuma ser `api://<app-id-uri>/mcp:observe`. Define `MCP_REQUIRED_SCOPES` com o valor **exacto** que vem no JWT (não só o nome curto). Hierarquia MCP só reconhece os nomes curtos `mcp:observe|operator|admin|tools` — se o Entra prefixar a URI, mapeia no IdP ou alinha o claim.
 
 Validar claims num JWT de teste (jwt.ms ou `jq` no payload).
 
@@ -166,7 +182,7 @@ Validar claims num JWT de teste (jwt.ms ou `jq` no payload).
 ### 5.3 Okta
 
 1. **Authorization Server** (Custom AS recomendado) com audience = `OIDC_AUDIENCE`.  
-2. **Scope** `mcp:tools`.  
+2. **Scopes** `mcp:observe` (e opcionalmente operator/admin).  
 3. **Application** OIDC → Native / SPA (PKCE), grant Authorization Code.  
 4. Redirect URIs do Cursor.
 
@@ -181,7 +197,7 @@ https://<org>.okta.com/oauth2/default
 ```bash
 OIDC_ISSUER=https://dev-xxxxx.okta.com/oauth2/default
 OIDC_AUDIENCE=apim-mcp-api
-MCP_REQUIRED_SCOPES=mcp:tools
+MCP_REQUIRED_SCOPES=mcp:observe
 ```
 
 No Okta, confirma que o access token é JWT (não opaco) e que o **Audience** do Authorization Server coincide com `OIDC_AUDIENCE`.
@@ -191,7 +207,7 @@ No Okta, confirma que o access token é JWT (não opaco) e que o **Audience** do
 ### 5.4 Auth0
 
 1. **API** em Auth0 com Identifier = audience (ex.: `https://mcp.example.com` ou `apim-mcp-api`).  
-2. Em **Permissions** da API, adiciona `mcp:tools`.  
+2. Em **Permissions** da API, adiciona `mcp:observe` (e opcionalmente operator/admin).  
 3. **Application** → Native ou SPA, grant Authorization Code + PKCE.  
 4. Authorize a Application na API; Active Toggle “Allow Skipping User Consent” só se fizer sentido em lab.
 
@@ -205,10 +221,10 @@ https://<tenant>.auth0.com/
 ```bash
 OIDC_ISSUER=https://<tenant>.auth0.com/
 OIDC_AUDIENCE=apim-mcp-api
-MCP_REQUIRED_SCOPES=mcp:tools
+MCP_REQUIRED_SCOPES=mcp:observe
 ```
 
-Auth0 coloca o audience da API em `aud`. Activa RBAC / “Add Permissions in the Access Token” para o claim `permissions` — **nota:** o MCP lê `scope` / `scp`, não `permissions`. Garante que `mcp:tools` vem em `scope` (Auth0 costuma incluir permissions pedidas no `scope` do access token quando pedidas no authorize).
+Auth0 coloca o audience da API em `aud`. Activa RBAC / “Add Permissions in the Access Token” para o claim `permissions` — **nota:** o MCP lê `scope` / `scp`, não `permissions`. Garante que `mcp:observe` (ou operator/admin) vem em `scope` (Auth0 costuma incluir permissions pedidas no `scope` do access token quando pedidas no authorize).
 
 ---
 
@@ -235,7 +251,7 @@ env:
   OIDC_ISSUER: "https://login.microsoftonline.com/<tenant-id>/v2.0"
   OIDC_AUDIENCE: "api://apim-mcp"
   MCP_RESOURCE_URL: "https://mcp.seu-dominio"
-  MCP_REQUIRED_SCOPES: "api://apim-mcp/mcp:tools"
+  MCP_REQUIRED_SCOPES: "mcp:observe"
 ```
 
 Reinicia o Deployment após mudar issuer/audience (a config é lida no arranque).
@@ -264,5 +280,5 @@ Lab: se precisares de saltar a checagem de audience **temporariamente** (nunca e
 - Preferir HTTPS no `MCP_RESOURCE_URL` e no IdP.  
 - Não commits de client secrets; no Cursor usa env vars quando possível.  
 - Rotaciona users de lab (`mcp-tester`) e passwords de admin do IdP partilhadas em chat.  
-- Limita quem pode pedir o scope `mcp:tools` (grupos / policies no IdP).  
+- Limita quem recebe scopes MCP via **roles** no IdP (`mcp-observe` / `mcp-operator` / `mcp-admin`); o cliente só pede `openid` / `profile`.  
 - `MCP_AUTH_MODE=none` só em redes de confiança / desenvolvimento local.

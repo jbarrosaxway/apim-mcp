@@ -1,10 +1,10 @@
 {
   "mcpServers": {
-    "Axway MCP (remoto OIDC)": {
+    "Axway API Gateway & APIM (diagnóstico e administração)": {
       "url": "http://mcp.example.com",
       "auth": {
         "CLIENT_ID": "mcp-cursor",
-        "scopes": ["openid", "profile", "mcp:tools"]
+        "scopes": ["openid", "profile"]
       }
     },
     "Axway MCP - stdio - local": {
@@ -12,6 +12,7 @@
       "args": ["C:/path/to/apim-mcp/build/index.js"],
       "env": {
         "TRANSPORT_MODE": "stdio",
+        "MCP_TOOL_PROFILE": "admin",
         "AXWAY_TLS_REJECT_UNAUTHORIZED": "false",
         "AXWAY_GATEWAY_URL": "https://anm.example.com/api",
         "AXWAY_GATEWAY_USERNAME": "admin",
@@ -20,6 +21,15 @@
         "AXWAY_MANAGER_USERNAME": "apiadmin",
         "AXWAY_MANAGER_PASSWORD": "replace-me"
       }
+    },
+    "Playwright (browser)": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@latest",
+        "--browser=chromium",
+        "--viewport-size=1280,800"
+      ]
     }
   }
 }
