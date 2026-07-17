@@ -27,7 +27,7 @@ const manifest = {
     name: "axway-mcp",
     version: "1.0.17",
     description:
-      "Axway API Gateway (ANM) + API Manager: diagnóstico (topologia, tráfego, erros, métricas), monitorização e administração APIM",
+      "Axway API Gateway (ANM) + API Manager: diagnostics (topology, traffic, errors, metrics), monitoring, and APIM administration",
   },
   protocolVersion: "2025-03-26",
   capabilities: {

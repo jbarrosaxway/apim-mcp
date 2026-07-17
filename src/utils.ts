@@ -1,49 +1,50 @@
 /**
- * Remove recursivamente chaves de um objeto ou itens de um array que sejam nulos,
- * indefinidos, uma string vazia ou um array/objeto vazio.
+ * Recursively removes keys from an object or items from an array that are null,
+ * undefined, an empty string, or an empty array/object.
  *
- * Esta função é útil para limpar dados de payloads antes de enviá-los para uma API,
- * garantindo que apenas valores significativos sejam transmitidos.
+ * Useful for cleaning payload data before sending it to an API,
+ * ensuring only meaningful values are transmitted.
  *
- * - Para objetos, ela itera sobre cada chave e remove aquelas cujo valor, após a limpeza, se torna "vazio".
- * - Para arrays, ela primeiro limpa cada item e, em seguida, filtra quaisquer itens que resultem em um valor "vazio".
+ * - For objects, iterates each key and removes those whose value becomes "empty" after cleaning.
+ * - For arrays, first cleans each item, then filters out any items that result in an "empty" value.
  *
- * @param data O objeto ou array a ser limpo.
- * @returns Os dados limpos. Se a limpeza resultar em um objeto ou array vazio, é isso que será retornado. Retorna o valor original se não for um objeto ou array.
+ * @param data The object or array to clean.
+ * @returns The cleaned data. If cleaning results in an empty object or array, that empty value is returned.
+ *          Returns the original value if it is not an object or array.
  */
 export function removeEmptyValues(data: any): any {
-  // Para valores que não são objetos (como strings, números, booleanos), retorna-os como estão.
-  // `null` é tecnicamente do tipo 'object', então a verificação `data === null` é importante.
+  // For non-object values (strings, numbers, booleans), return as-is.
+  // `null` is technically typeof 'object', so the `data === null` check matters.
   if (typeof data !== 'object' || data === null) {
     return data;
   }
 
-  // Se for um array, limpa cada item recursivamente e depois filtra os "vazios".
+  // If it is an array, clean each item recursively, then filter out "empty" ones.
   if (Array.isArray(data)) {
     return data
-      .map(item => removeEmptyValues(item)) // 1. Limpa cada item do array.
-      .filter(item => { // 2. Remove os itens que se tornaram "vazios".
+      .map(item => removeEmptyValues(item)) // 1. Clean each array item.
+      .filter(item => { // 2. Remove items that became "empty".
         if (item === null || item === undefined || item === '') return false;
         if (Array.isArray(item) && item.length === 0) return false;
-        // Garante que um objeto limpo, mas agora vazio, também seja removido do array.
+        // Ensure a cleaned-but-now-empty object is also removed from the array.
         if (typeof item === 'object' && Object.keys(item).length === 0) return false;
         return true;
       });
   }
 
-  // Se for um objeto, constrói um novo objeto apenas com as chaves que têm valores significativos.
+  // If it is an object, build a new object with only keys that have meaningful values.
   const newObj: { [key: string]: any } = {};
   for (const key of Object.keys(data)) {
-    const cleanedValue = removeEmptyValues(data[key]); // Limpa o valor da chave.
+    const cleanedValue = removeEmptyValues(data[key]); // Clean the key's value.
 
-    // Condições para ignorar a chave se o valor limpo for "vazio".
+    // Skip the key if the cleaned value is "empty".
     if (cleanedValue === null || cleanedValue === undefined || cleanedValue === '') {
       continue;
     }
     if (Array.isArray(cleanedValue) && cleanedValue.length === 0) {
       continue;
     }
-    // Garante que a chave seja removida se o seu valor for um objeto que se tornou vazio após a limpeza.
+    // Remove the key if its value is an object that became empty after cleaning.
     if (typeof cleanedValue === 'object' && cleanedValue !== null && !Array.isArray(cleanedValue) && Object.keys(cleanedValue).length === 0) {
       continue;
     }
@@ -51,4 +52,4 @@ export function removeEmptyValues(data: any): any {
     newObj[key] = cleanedValue;
   }
   return newObj;
-} 
+}

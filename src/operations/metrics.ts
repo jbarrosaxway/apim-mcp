@@ -1,13 +1,13 @@
 /**
  * @module src/operations/metrics
- * @description Este módulo contém a operação (ferramenta) para obter relatórios de métricas
- * do Axway API Manager, permitindo a análise de uso de APIs e aplicações.
+ * @description This module contains the operation (tool) for retrieving metrics reports
+ * from the Axway API Manager, enabling analysis of API and application usage.
  */
 
 import { AxwayApi } from '../api.js';
 
 /**
- * Interface que representa um item de métrica individual após a transformação.
+ * Interface representing an individual metric item after transformation.
  */
 export interface Metric {
     name: string;
@@ -19,14 +19,14 @@ export interface Metric {
 }
 
 /**
- * Transforma os dados brutos de métricas da API em um formato mais limpo e estruturado.
- * @param data O array de dados de métricas bruto retornado pela API.
- * @returns Um array de objetos de métrica formatados.
+ * Transforms raw API metrics data into a cleaner, more structured format.
+ * @param data The raw metrics data array returned by the API.
+ * @returns An array of formatted metric objects.
  * @internal
  */
 function transformMetrics(data: any[]): Metric[] {
     if (!Array.isArray(data)) {
-        console.warn("A função transformMetrics esperava um array, mas recebeu:", typeof data);
+        console.warn("transformMetrics expected an array, but received:", typeof data);
         return [];
     }
     return data.map(item => ({
@@ -40,20 +40,20 @@ function transformMetrics(data: any[]): Metric[] {
 }
 
 /**
- * Ferramenta para obter um relatório de resumo para métricas de aplicação ou API.
+ * Tool to get a summary report for application or API metrics.
  *
- * @param api Instância da classe AxwayApi.
- * @param params Um objeto contendo os parâmetros para a consulta de métricas.
- * @param params.type O tipo de relatório, 'app' para aplicações ou 'api' para APIs.
- * @param params.level O nível de detalhe do relatório (0 ou 1 para drill-through).
- * @param params.from A data/hora de início para o relatório (formato ISO-8601).
- * @param params.to A data/hora de término para o relatório (formato ISO-8601).
- * @param params.client (Opcional) Array de IDs de cliente para filtrar.
- * @param params.service (Opcional) Array de nomes de serviço para filtrar.
- * @param params.method (Opcional) Nome de um método específico para filtrar.
- * @param params.organization (Opcional) Nome ou ID de uma organização para filtrar.
- * @param params.reportsubtype (Opcional) Subtipo do relatório, como 'trafficAll'.
- * @returns Um objeto contendo a lista de métricas formatadas e ferramentas relacionadas.
+ * @param api AxwayApi class instance.
+ * @param params An object containing the parameters for the metrics query.
+ * @param params.type Report type: 'app' for applications or 'api' for APIs.
+ * @param params.level Report detail level (0 or 1 for drill-through).
+ * @param params.from Report start date/time (ISO-8601 format).
+ * @param params.to Report end date/time (ISO-8601 format).
+ * @param params.client (Optional) Array of client IDs to filter.
+ * @param params.service (Optional) Array of service names to filter.
+ * @param params.method (Optional) Name of a specific method to filter.
+ * @param params.organization (Optional) Organization name or ID to filter.
+ * @param params.reportsubtype (Optional) Report subtype, such as 'trafficAll'.
+ * @returns An object containing the formatted metrics list and related tools.
  */
 export async function getMetrics(
     api: AxwayApi,
@@ -72,22 +72,22 @@ export async function getMetrics(
     const rawMetrics = await api.getMetrics(params);
     const transformedMetrics = transformMetrics(rawMetrics);
     
-    // Extrai nomes de apps ou APIs para usar nas ferramentas relacionadas
+    // Extract app or API names for use in related tools
     const clientNames = transformedMetrics.map(m => m.name).filter(name => name !== 'N/A');
     
     return {
         metrics: transformedMetrics,
-        message: `Relatório de métricas gerado com ${transformedMetrics.length} resultados.`,
+        message: `Metrics report generated with ${transformedMetrics.length} results.`,
         relatedTools: [
             {
                 tool_name: "list_alerts",
-                description: "Verificar se há alertas de sistema que possam estar relacionados a falhas ou exceções vistas nas métricas.",
+                description: "Check for system alerts that may relate to failures or exceptions seen in the metrics.",
                 parameters: []
             },
             ...clientNames.map(name => ({
                 tool_name: "get_application_quotas",
-                description: `Verificar as cotas da aplicação '${name}' (se for uma aplicação).`,
-                parameters: [{ name: "applicationId", value: name }] // Assumindo que o nome pode ser usado como ID ou que o usuário o substituirá
+                description: `Check quotas for application '${name}' (if it is an application).`,
+                parameters: [{ name: "applicationId", value: name }] // Assuming the name can be used as ID or that the user will replace it
             }))
         ]
     };

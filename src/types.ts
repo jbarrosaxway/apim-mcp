@@ -1,41 +1,41 @@
 /**
  * @module src/types
- * @description Define as interfaces e tipos de dados customizados usados em todo o projeto.
+ * @description Defines custom interfaces and data types used throughout the project.
  */
 
 /**
- * Representa uma ferramenta relacionada que pode ser sugerida como um próximo passo lógico
- * após a execução de uma ferramenta principal.
+ * Represents a related tool that can be suggested as a logical next step
+ * after a primary tool has been executed.
  *
- * Por exemplo, depois de usar `list_users`, uma `RelatedTool` poderia ser `get_user`,
- * pré-preenchida com o `id` de um dos usuários da lista.
+ * For example, after using `list_users`, a `RelatedTool` could be `get_user`,
+ * pre-filled with the `id` of one of the users from the list.
  */
 export interface RelatedTool {
     /**
-     * O nome da ferramenta a ser chamada, que deve corresponder a uma ferramenta registrada.
+     * The name of the tool to call; must match a registered tool.
      * @example "get_user_details"
      */
     tool_name: string;
     /**
-     * Uma descrição amigável explicando por que esta ferramenta está sendo sugerida
-     * e o que ela fará.
-     * @example "Obter detalhes para o usuário 'fulano'"
+     * A user-friendly description explaining why this tool is being suggested
+     * and what it will do.
+     * @example "Get details for user 'jdoe'"
      */
     description: string;
     /**
-     * Uma lista de parâmetros pré-preenchidos para a ferramenta sugerida.
-     * O objetivo é facilitar a próxima ação do usuário, fornecendo os argumentos necessários.
+     * A list of pre-filled parameters for the suggested tool.
+     * The goal is to make the user's next action easier by providing the required arguments.
      */
     parameters: {
         /**
-         * O nome do parâmetro, que deve corresponder a um dos parâmetros esperados pela `tool_name`.
+         * The parameter name; must match one of the parameters expected by `tool_name`.
          * @example "userId"
          */
         name: string;
         /**
-         * O valor sugerido para o parâmetro.
+         * The suggested value for the parameter.
          * @example "801a61be-b924-40fd-ad64-77a339a695b7"
          */
         value: string;
     }[];
-} 
+}

@@ -1,17 +1,17 @@
 /**
  * @module src/operations/monitoring
- * @description Este módulo contém as operações (ferramentas) para monitoramento de tráfego
- * no Axway API Gateway. Permite obter métricas de tráfego, pesquisar transações
- * e inspecionar detalhes de eventos específicos, como payloads e traces.
+ * @description This module contains the operations (tools) for traffic monitoring
+ * on the Axway API Gateway. It supports retrieving traffic metrics, searching transactions,
+ * and inspecting details of specific events such as payloads and traces.
  */
 
 import { AxwayApi } from "../api.js";
 
 /**
- * Ferramenta para obter um resumo das métricas de tráfego para uma instância específica do API Gateway.
- * @param api Instância da classe AxwayApi.
- * @param instanceId O ID da instância do API Gateway (ex: 'instance-1').
- * @returns Um objeto com o resumo do tráfego para a instância.
+ * Tool to get a traffic metrics summary for a specific API Gateway instance.
+ * @param api AxwayApi class instance.
+ * @param instanceId The API Gateway instance ID (e.g. 'instance-1').
+ * @returns An object with the traffic summary for the instance.
  */
 export async function getInstanceTraffic(api: AxwayApi, instanceId: string) {
   try {
@@ -30,32 +30,32 @@ export async function getInstanceTraffic(api: AxwayApi, instanceId: string) {
         averageBytesSent: summary.avgBytesSent || 0,
         averageBytesReceived: summary.avgBytesRecv || 0
       },
-      message: `Resumo do tráfego para a instância ${instanceId} recuperado.`,
+      message: `Traffic summary for instance ${instanceId} retrieved.`,
       relatedTools: [
         {
           tool_name: 'get_service_traffic',
-          description: `Obter um detalhamento do tráfego por serviço nesta instância (${instanceId}).`,
+          description: `Get a per-service traffic breakdown for this instance (${instanceId}).`,
           parameters: [{ name: 'instanceId', value: instanceId }]
         },
         {
           tool_name: 'list_topology',
-          description: 'Listar a topologia para encontrar outros IDs de instância.',
+          description: 'List the topology to find other instance IDs.',
           parameters: []
         }
       ]
     };
   } catch (error) {
-    console.error(`Erro ao obter o tráfego para a instância ${instanceId}:`, error);
+    console.error(`Error getting traffic for instance ${instanceId}:`, error);
     throw error;
   }
 }
 
 /**
- * Ferramenta para obter métricas de tráfego para um serviço específico em uma instância do API Gateway.
- * @param api Instância da classe AxwayApi.
- * @param instanceId O ID da instância onde o serviço está sendo executado.
- * @param serviceName O nome exato do serviço (ex: 'Default Services').
- * @returns Um objeto com os detalhes do tráfego para o serviço especificado.
+ * Tool to get traffic metrics for a specific service on an API Gateway instance.
+ * @param api AxwayApi class instance.
+ * @param instanceId The ID of the instance where the service is running.
+ * @param serviceName The exact service name (e.g. 'Default Services').
+ * @returns An object with traffic details for the specified service.
  */
 export async function getServiceTraffic(api: AxwayApi, instanceId: string, serviceName: string) {
   try {
@@ -76,16 +76,16 @@ export async function getServiceTraffic(api: AxwayApi, instanceId: string, servi
         averageBytesSent: summary.avgBytesSent || 0,
         averageBytesReceived: summary.avgBytesRecv || 0
       },
-      message: `Resumo do tráfego para o serviço '${serviceName}' na instância ${instanceId} recuperado.`,
+      message: `Traffic summary for service '${serviceName}' on instance ${instanceId} retrieved.`,
       relatedTools: [
         {
           tool_name: 'get_instance_traffic',
-          description: `Ver o tráfego agregado para a instância inteira (${instanceId}).`,
+          description: `View aggregated traffic for the entire instance (${instanceId}).`,
           parameters: [{ name: 'instanceId', value: instanceId }]
         },
         {
           tool_name: 'list_topology',
-          description: 'Descobrir outros serviços e instâncias na topologia.',
+          description: 'Discover other services and instances in the topology.',
           parameters: []
         }
       ]
@@ -97,13 +97,13 @@ export async function getServiceTraffic(api: AxwayApi, instanceId: string, servi
 }
 
 /**
- * Ferramenta para obter uma linha do tempo de métricas para uma instância específica do API Gateway.
- * Útil para visualizar tendências ao longo do tempo.
- * @param api Instância da classe AxwayApi.
- * @param instanceId O ID da instância.
- * @param timeline O intervalo de tempo para a consulta (ex: '10m', '1h', '24h').
- * @param metricTypes Um array dos tipos de métrica a serem incluídos (ex: ['successes', 'failures']).
- * @returns Um objeto contendo os dados da linha do tempo formatados.
+ * Tool to get a metrics timeline for a specific API Gateway instance.
+ * Useful for visualizing trends over time.
+ * @param api AxwayApi class instance.
+ * @param instanceId The instance ID.
+ * @param timeline The time window for the query (e.g. '10m', '1h', '24h').
+ * @param metricTypes An array of metric types to include (e.g. ['successes', 'failures']).
+ * @returns An object containing the formatted timeline data.
  */
 export async function getInstanceMetricsTimeline(api: AxwayApi, instanceId: string, timeline: string, metricTypes: string[]) {
   try {
@@ -128,38 +128,38 @@ export async function getInstanceMetricsTimeline(api: AxwayApi, instanceId: stri
         pointIntervalMs: firstSeries.pointInterval,
         pointStartTimestamp: new Date(firstSeries.pointStart).toISOString()
       },
-      message: `Linha do tempo de métricas para a instância ${instanceId} recuperada.`,
+      message: `Metrics timeline for instance ${instanceId} retrieved.`,
       relatedTools: [
         {
           tool_name: 'get_instance_traffic',
-          description: 'Obter um resumo do tráfego total para esta instância.',
+          description: 'Get a total traffic summary for this instance.',
           parameters: [{ name: 'instanceId', value: instanceId }]
         },
         {
           tool_name: 'list_topology',
-          description: 'Encontrar outros IDs de instância.',
+          description: 'Find other instance IDs.',
           parameters: []
         }
       ]
     };
   } catch (error) {
-    console.error(`Erro ao obter a linha do tempo de métricas para a instância ${instanceId}:`, error);
+    console.error(`Error getting metrics timeline for instance ${instanceId}:`, error);
     throw error;
   }
 }
 
 /**
- * Ferramenta para pesquisar eventos de tráfego (transações) em uma instância do API Gateway.
- * Este é o ponto de partida principal para depurar problemas específicos.
- * @param api Instância da classe AxwayApi.
- * @param args Um objeto com os argumentos da pesquisa.
- * @param args.instanceId O ID da instância onde a pesquisa será feita.
- * @param args.ago O período de tempo para a pesquisa (ex: '1h', '24h', '10m').
- * @param args.count (Opcional) O número máximo de eventos a serem retornados. Padrão: 100.
- * @param args.protocol (Opcional) Filtrar por protocolo (ex: 'http', 'https').
- * @param args.searchField (Opcional) Campo para pesquisar (ex: 'status', 'leg', 'remoteAddr').
- * @param args.searchValue (Opcional) Valor para o campo de pesquisa.
- * @returns Uma lista de transações que correspondem aos critérios de pesquisa.
+ * Tool to search for traffic events (transactions) on an API Gateway instance.
+ * This is the primary starting point for debugging specific issues.
+ * @param api AxwayApi class instance.
+ * @param args An object with the search arguments.
+ * @param args.instanceId The ID of the instance to search on.
+ * @param args.ago The lookback period for the search (e.g. '1h', '24h', '10m').
+ * @param args.count (Optional) Maximum number of events to return. Default: 100.
+ * @param args.protocol (Optional) Filter by protocol (e.g. 'http', 'https').
+ * @param args.searchField (Optional) Field to search (e.g. 'status', 'leg', 'remoteAddr').
+ * @param args.searchValue (Optional) Value for the search field.
+ * @returns A list of transactions matching the search criteria.
  */
 export async function searchTrafficEvents(api: AxwayApi, args: { instanceId: string, ago: string, count?: number, protocol?: string, searchField?: string, searchValue?: string }) {
   try {
@@ -181,44 +181,44 @@ export async function searchTrafficEvents(api: AxwayApi, args: { instanceId: str
       instanceId: args.instanceId,
       transactionCount: transactions.length,
       transactions: transactions,
-      message: `Pesquisa encontrou ${transactions.length} transações na instância ${args.instanceId}.`,
+      message: `Search found ${transactions.length} transactions on instance ${args.instanceId}.`,
       relatedTools: [
         ...transactions.map((tx: any) => ({
           tool_name: 'get_traffic_event_details',
-          description: `Obter detalhes para a transação com ID de correlação ${tx.corrId}.`,
+          description: `Get details for the transaction with correlation ID ${tx.corrId}.`,
           parameters: [
             { name: 'instanceId', value: args.instanceId },
             { name: 'protocol', value: tx.protocol },
             { name: 'correlationId', value: tx.corrId },
-            { name: 'leg', value: '0' } // Assumindo leg 0, o mais comum
+            { name: 'leg', value: '0' } // Assuming leg 0, the most common
           ]
         })),
         {
           tool_name: 'list_topology',
-          description: 'Encontrar outros IDs de instância para pesquisar.',
+          description: 'Find other instance IDs to search.',
           parameters: []
         }
       ]
     };
   } catch (error) {
-    console.error(`Erro ao pesquisar eventos de tráfego na instância ${args.instanceId}:`, error);
+    console.error(`Error searching traffic events on instance ${args.instanceId}:`, error);
     throw error;
   }
 }
 
 /**
- * Ferramenta para obter informações detalhadas sobre um evento de tráfego específico (transação),
- * incluindo cabeçalhos de requisição e resposta.
- * @param api Instância da classe AxwayApi.
- * @param args Um objeto com os argumentos para obter os detalhes.
- * @param args.instanceId O ID da instância.
- * @param args.correlationId O ID de correlação da transação, obtido de `search_traffic_events`.
- * @param args.protocol O protocolo da transação (ex: 'http').
- * @param args.leg O "leg" (segmento) da transação. Normalmente é 0 para a comunicação cliente-gateway.
- * @param args.includeDetails (Opcional) Incluir detalhes da transação. Padrão: true.
- * @param args.includeRequestHeaders (Opcional) Incluir cabeçalhos da requisição. Padrão: true.
- * @param args.includeResponseHeaders (Opcional) Incluir cabeçalhos da resposta. Padrão: true.
- * @returns Um objeto com os detalhes, cabeçalhos de requisição e resposta da transação.
+ * Tool to get detailed information about a specific traffic event (transaction),
+ * including request and response headers.
+ * @param api AxwayApi class instance.
+ * @param args An object with the arguments to retrieve the details.
+ * @param args.instanceId The instance ID.
+ * @param args.correlationId The transaction correlation ID, obtained from `search_traffic_events`.
+ * @param args.protocol The transaction protocol (e.g. 'http').
+ * @param args.leg The transaction "leg" (segment). Usually 0 for client-gateway communication.
+ * @param args.includeDetails (Optional) Include transaction details. Default: true.
+ * @param args.includeRequestHeaders (Optional) Include request headers. Default: true.
+ * @param args.includeResponseHeaders (Optional) Include response headers. Default: true.
+ * @returns An object with the transaction details, request headers, and response headers.
  */
 export async function getTrafficEventDetails(api: AxwayApi, args: { instanceId: string, correlationId: string, protocol: string, leg: number, includeDetails?: boolean, includeRequestHeaders?: boolean, includeResponseHeaders?: boolean }) {
   try {
@@ -237,7 +237,7 @@ export async function getTrafficEventDetails(api: AxwayApi, args: { instanceId: 
       relatedTools: [
         {
           tool_name: 'get_traffic_event_payload',
-          description: 'Obter o payload (corpo) da REQUISIÇÃO para esta transação.',
+          description: 'Get the REQUEST payload (body) for this transaction.',
           parameters: [
             { name: 'instanceId', value: args.instanceId },
             { name: 'correlationId', value: args.correlationId },
@@ -247,7 +247,7 @@ export async function getTrafficEventDetails(api: AxwayApi, args: { instanceId: 
         },
         {
           tool_name: 'get_traffic_event_payload',
-          description: 'Obter o payload (corpo) da RESPOSTA para esta transação.',
+          description: 'Get the RESPONSE payload (body) for this transaction.',
           parameters: [
             { name: 'instanceId', value: args.instanceId },
             { name: 'correlationId', value: args.correlationId },
@@ -257,7 +257,7 @@ export async function getTrafficEventDetails(api: AxwayApi, args: { instanceId: 
         },
         {
           tool_name: 'get_traffic_event_trace',
-          description: 'Obter o trace (log detalhado) para esta transação.',
+          description: 'Get the trace (detailed log) for this transaction.',
           parameters: [
             { name: 'instanceId', value: args.instanceId },
             { name: 'correlationId', value: args.correlationId }
@@ -266,20 +266,20 @@ export async function getTrafficEventDetails(api: AxwayApi, args: { instanceId: 
       ]
     };
   } catch (error) {
-    console.error(`Erro ao obter detalhes para o evento de tráfego ${args.correlationId}:`, error);
+    console.error(`Error getting details for traffic event ${args.correlationId}:`, error);
     throw error;
   }
 }
 
 /**
- * Ferramenta para obter o payload (corpo da mensagem) de uma transação, seja da requisição ou da resposta.
- * @param api Instância da classe AxwayApi.
- * @param args Um objeto com os argumentos.
- * @param args.instanceId O ID da instância.
- * @param args.correlationId O ID de correlação da transação.
- * @param args.leg O "leg" da transação.
- * @param args.direction A direção do payload: 'received' (do cliente para o gateway) ou 'sent' (do gateway para o cliente).
- * @returns Um objeto contendo o payload como texto.
+ * Tool to get the payload (message body) of a transaction, either request or response.
+ * @param api AxwayApi class instance.
+ * @param args An object with the arguments.
+ * @param args.instanceId The instance ID.
+ * @param args.correlationId The transaction correlation ID.
+ * @param args.leg The transaction "leg".
+ * @param args.direction Payload direction: 'received' (client to gateway) or 'sent' (gateway to client).
+ * @returns An object containing the payload as text.
  */
 export async function getTrafficEventPayload(api: AxwayApi, args: { instanceId: string, correlationId: string, leg: number, direction: 'received' | 'sent' }) {
   try {
@@ -293,7 +293,7 @@ export async function getTrafficEventPayload(api: AxwayApi, args: { instanceId: 
       relatedTools: [
         {
           tool_name: 'get_traffic_event_details',
-          description: 'Ver cabeçalhos e outros metadados para esta transação.',
+          description: 'View headers and other metadata for this transaction.',
           parameters: [
             { name: 'instanceId', value: args.instanceId },
             { name: 'correlationId', value: args.correlationId },
@@ -304,21 +304,21 @@ export async function getTrafficEventPayload(api: AxwayApi, args: { instanceId: 
       ]
     };
   } catch (error) {
-    console.error(`Erro ao obter o payload para o evento de tráfego ${args.correlationId}:`, error);
+    console.error(`Error getting payload for traffic event ${args.correlationId}:`, error);
     throw error;
   }
 }
 
 /**
- * Ferramenta para obter os dados de trace (log detalhado) de uma transação específica.
- * Muito útil para depuração de baixo nível de políticas e filtros.
- * @param api Instância da classe AxwayApi.
- * @param args Um objeto com os argumentos.
- * @param args.instanceId O ID da instância.
- * @param args.correlationId O ID de correlação da transação.
- * @param args.includeSentData (Opcional) Incluir dados enviados no trace. Padrão: false.
- * @param args.includeReceivedData (Opcional) Incluir dados recebidos no trace. Padrão: false.
- * @returns Um objeto contendo os dados de trace.
+ * Tool to get the trace data (detailed log) for a specific transaction.
+ * Very useful for low-level debugging of policies and filters.
+ * @param api AxwayApi class instance.
+ * @param args An object with the arguments.
+ * @param args.instanceId The instance ID.
+ * @param args.correlationId The transaction correlation ID.
+ * @param args.includeSentData (Optional) Include sent data in the trace. Default: false.
+ * @param args.includeReceivedData (Optional) Include received data in the trace. Default: false.
+ * @returns An object containing the trace data.
  */
 export async function getTrafficEventTrace(api: AxwayApi, args: { instanceId: string, correlationId: string, includeSentData?: boolean, includeReceivedData?: boolean }) {
   try {
@@ -331,11 +331,11 @@ export async function getTrafficEventTrace(api: AxwayApi, args: { instanceId: st
     return {
       correlationId: args.correlationId,
       trace: result || [],
-      message: `Trace para a transação ${args.correlationId} recuperado.`,
+      message: `Trace for transaction ${args.correlationId} retrieved.`,
       relatedTools: [
         {
           tool_name: 'get_traffic_event_details',
-          description: 'Ver cabeçalhos e outros metadados.',
+          description: 'View headers and other metadata.',
           parameters: [
             { name: 'instanceId', value: args.instanceId },
             { name: 'correlationId', value: args.correlationId },
@@ -345,7 +345,7 @@ export async function getTrafficEventTrace(api: AxwayApi, args: { instanceId: st
         },
         {
           tool_name: 'get_traffic_event_payload',
-          description: 'Obter o payload completo da requisição/resposta.',
+          description: 'Get the full request/response payload.',
           parameters: [
             { name: 'instanceId', value: args.instanceId },
             { name: 'correlationId', value: args.correlationId },
@@ -356,7 +356,7 @@ export async function getTrafficEventTrace(api: AxwayApi, args: { instanceId: st
       ]
     };
   } catch (error) {
-    console.error(`Erro ao obter o trace para o evento de tráfego ${args.correlationId}:`, error);
+    console.error(`Error getting trace for traffic event ${args.correlationId}:`, error);
     throw error;
   }
 }

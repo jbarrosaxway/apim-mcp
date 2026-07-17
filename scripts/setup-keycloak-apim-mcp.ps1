@@ -206,16 +206,24 @@ Ensure-Client @{
   serviceAccountsEnabled = $false
 } | Out-Null
 
+# Public PKCE client for MCP agents (Cursor, Kiro, Claude Code, Codex, …).
+# redirect_uri is chosen by each client; loopback wildcards cover ephemeral ports.
 $cursorId = Ensure-Client @{
   clientId = "mcp-cursor"
-  name = "MCP Cursor public PKCE"
+  name = "MCP clients public PKCE"
   enabled = $true
   protocol = "openid-connect"
   publicClient = $true
   standardFlowEnabled = $true
   directAccessGrantsEnabled = $false
   implicitFlowEnabled = $false
-  redirectUris = @("http://127.0.0.1/*", "http://localhost/*", "cursor://*")
+  redirectUris = @(
+    "http://127.0.0.1/*",
+    "http://localhost/*",
+    "cursor://*",
+    "https://www.cursor.com/*",
+    "https://claude.ai/api/mcp/auth_callback"
+  )
   webOrigins = @("+")
   attributes = @{ "pkce.code.challenge.method" = "S256" }
 }
@@ -260,8 +268,8 @@ function Attach-DefaultScope {
   } catch {}
 }
 
-# Default scopes: client pede só openid/profile; Keycloak inclui o MCP scope
-# que a role do user permitir (role scope mapping). Sem pedir mcp:* no Cursor.
+# Default scopes: client requests only openid/profile; Keycloak includes the MCP scope
+# allowed by the user's role (role scope mapping). No need to request mcp:* in Cursor.
 foreach ($s in @($scopeObserve, $scopeOperator, $scopeAdmin, $scopeTools)) {
   Detach-OptionalScope -ClientId $cursorId -Scope $s
   Attach-DefaultScope -ClientId $cursorId -Scope $s
@@ -365,7 +373,7 @@ function Smoke-DeniedScope {
   Write-Host "Smoke DENY OK user=$Username requested='$Scope' did not get '$MustNotContain' (got='$scopeClaim')"
 }
 
-# Pedir só openid — o perfil MCP vem da role (default client scopes)
+# Request openid only — the MCP profile comes from the role (default client scopes)
 Smoke-Token -Username "mcp-observer" -Scope "openid" -ExpectContains "mcp:observe"
 Smoke-Token -Username "mcp-operator" -Scope "openid" -ExpectContains "mcp:operator"
 Smoke-Token -Username "mcp-admin" -Scope "openid" -ExpectContains "mcp:admin"

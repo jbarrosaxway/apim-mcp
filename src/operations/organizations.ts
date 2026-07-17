@@ -1,16 +1,16 @@
 /**
  * @module src/operations/organizations
- * @description Este módulo contém as operações (ferramentas) para o gerenciamento
- * completo (CRUD) de Organizações no Axway API Manager.
+ * @description This module contains the operations (tools) for managing
+ * full (CRUD) Organizations in the Axway API Manager.
  */
 
 import { AxwayApi } from "../api.js";
 import { removeEmptyValues } from "../utils.js";
 
 /**
- * Transforma o objeto de organização bruto da API em um formato mais limpo e consistente.
- * @param org O objeto de organização bruto.
- * @returns Um objeto de organização formatado.
+ * Transforms the raw API organization object into a cleaner, more consistent format.
+ * @param org The raw organization object.
+ * @returns A formatted organization object.
  * @internal
  */
 function transformOrganization(org: any) {
@@ -29,9 +29,9 @@ function transformOrganization(org: any) {
 }
 
 /**
- * Ferramenta para listar todas as organizações no API Manager.
- * @param api Instância da classe AxwayApi.
- * @returns Um objeto contendo a lista de organizações.
+ * Tool to list all organizations in the API Manager.
+ * @param api AxwayApi class instance.
+ * @returns An object containing the list of organizations.
  */
 export async function listOrganizations(api: AxwayApi) {
   try {
@@ -40,31 +40,31 @@ export async function listOrganizations(api: AxwayApi) {
     return {
       count: organizations.length,
       organizations: organizations,
-      message: `Encontradas ${organizations.length} organizações.`,
+      message: `Found ${organizations.length} organizations.`,
       relatedTools: [
         ...organizations.map((org: any) => ({
           tool_name: 'get_organization',
-          description: `Obter detalhes da organização '${org.name}'.`,
+          description: `Get details for organization '${org.name}'.`,
           parameters: [{ name: 'id', value: org.organizationId }]
         })),
         {
           tool_name: 'create_organization',
-          description: 'Criar uma nova organização.',
-          parameters: [{ name: 'name', value: 'Nova Organização' }]
+          description: 'Create a new organization.',
+          parameters: [{ name: 'name', value: 'New Organization' }]
         }
       ]
     };
   } catch (error) {
-    console.error(`Erro ao listar organizações:`, error);
+    console.error(`Error listing organizations:`, error);
     throw error;
   }
 }
 
 /**
- * Ferramenta para obter os detalhes de uma organização específica pelo seu ID.
- * @param api Instância da classe AxwayApi.
- * @param id O ID da organização a ser recuperada.
- * @returns Um objeto contendo os detalhes da organização.
+ * Tool to get details for a specific organization by ID.
+ * @param api AxwayApi class instance.
+ * @param id The ID of the organization to retrieve.
+ * @returns An object containing the organization details.
  */
 export async function getOrganization(api: AxwayApi, id: string) {
   try {
@@ -75,119 +75,119 @@ export async function getOrganization(api: AxwayApi, id: string) {
       relatedTools: [
         {
           tool_name: 'update_organization',
-          description: `Atualizar a organização '${organization.name}'.`,
+          description: `Update organization '${organization.name}'.`,
           parameters: [{ name: 'id', value: id }]
         },
         {
           tool_name: 'list_users',
-          description: 'Listar todos os usuários para encontrar aqueles que pertencem a esta organização.',
+          description: 'List all users to find those that belong to this organization.',
           parameters: []
         },
         {
           tool_name: 'delete_organization',
-          description: `Deletar a organização '${organization.name}'.`,
+          description: `Delete organization '${organization.name}'.`,
           parameters: [{ name: 'id', value: id }]
         }
       ]
     };
   } catch (error) {
-    console.error(`Erro ao obter a organização ${id}:`, error);
+    console.error(`Error getting organization ${id}:`, error);
     throw error;
   }
 }
 
 /**
- * Ferramenta para criar uma nova organização.
- * @param api Instância da classe AxwayApi.
- * @param name O nome da nova organização.
- * @param description (Opcional) Uma descrição para a organização.
- * @param email (Opcional) O e-mail de contato da organização.
- * @param phone (Opcional) O telefone de contato da organização.
- * @param enabled (Opcional) Define se a organização deve ser criada como habilitada. Padrão: true.
- * @returns Um objeto de confirmação com os detalhes da organização criada.
+ * Tool to create a new organization.
+ * @param api AxwayApi class instance.
+ * @param name The name of the new organization.
+ * @param description (Optional) A description for the organization.
+ * @param email (Optional) The organization contact email.
+ * @param phone (Optional) The organization contact phone.
+ * @param enabled (Optional) Whether the organization should be created enabled. Default: true.
+ * @returns A confirmation object with the created organization details.
  */
 export async function createOrganization(api: AxwayApi, name: string, description?: string, email?: string, phone?: string, enabled: boolean = true) {
   try {
     const newOrg = await api.createOrganization({ name, description, email, phone, enabled });
     return {
-      message: `Organização '${newOrg.name}' criada com sucesso.`,
+      message: `Organization '${newOrg.name}' created successfully.`,
       organization: transformOrganization(newOrg),
       relatedTools: [
         {
           tool_name: 'list_organizations',
-          description: 'Ver todas as organizações, incluindo a recém-criada.',
+          description: 'View all organizations, including the newly created one.',
           parameters: []
         },
         {
           tool_name: 'get_organization',
-          description: `Ver os detalhes completos da organização '${newOrg.name}'.`,
+          description: `View full details for organization '${newOrg.name}'.`,
           parameters: [{ name: 'id', value: newOrg.id }]
         }
       ]
     };
   } catch (error) {
-    console.error(`Erro ao criar a organização:`, error);
+    console.error(`Error creating organization:`, error);
     throw error;
   }
 }
 
 /**
- * Ferramenta para atualizar uma organização existente.
- * Apenas os campos fornecidos serão atualizados.
- * @param api Instância da classe AxwayApi.
- * @param id O ID da organização a ser atualizada.
- * @param name (Opcional) O novo nome para a organização.
- * @param description (Opcional) A nova descrição para a organização.
- * @param email (Opcional) O novo e-mail de contato.
- * @param phone (Opcional) O novo telefone de contato.
- * @param enabled (Opcional) O novo estado de habilitação da organização.
- * @returns Um objeto de confirmação com os detalhes da organização atualizada.
+ * Tool to update an existing organization.
+ * Only the provided fields will be updated.
+ * @param api AxwayApi class instance.
+ * @param id The ID of the organization to update.
+ * @param name (Optional) The new name for the organization.
+ * @param description (Optional) The new description for the organization.
+ * @param email (Optional) The new contact email.
+ * @param phone (Optional) The new contact phone.
+ * @param enabled (Optional) The new enabled state for the organization.
+ * @returns A confirmation object with the updated organization details.
  */
 export async function updateOrganization(api: AxwayApi, id: string, name?: string, description?: string, email?: string, phone?: string, enabled?: boolean) {
   try {
     const payload = removeEmptyValues({ name, description, email, phone, enabled });
     if (Object.keys(payload).length === 0) {
-      return { message: "Nenhum campo fornecido para atualização. Nenhuma ação foi tomada." };
+      return { message: "No fields provided for update. No action was taken." };
     }
     const updatedOrg = await api.updateOrganization(id, payload);
     return {
-      message: `Organização '${updatedOrg.name}' atualizada com sucesso.`,
+      message: `Organization '${updatedOrg.name}' updated successfully.`,
       organization: transformOrganization(updatedOrg),
       relatedTools: [
         {
           tool_name: 'get_organization',
-          description: 'Ver os detalhes atualizados da organização.',
+          description: 'View the updated organization details.',
           parameters: [{ name: 'id', value: id }]
         }
       ]
     };
   } catch (error) {
-    console.error(`Erro ao atualizar a organização ${id}:`, error);
+    console.error(`Error updating organization ${id}:`, error);
     throw error;
   }
 }
 
 /**
- * Ferramenta para deletar uma organização.
- * @param api Instância da classe AxwayApi.
- * @param id O ID da organização a ser deletada.
- * @returns Um objeto de confirmação da exclusão.
+ * Tool to delete an organization.
+ * @param api AxwayApi class instance.
+ * @param id The ID of the organization to delete.
+ * @returns A confirmation object for the deletion.
  */
 export async function deleteOrganization(api: AxwayApi, id: string) {
   try {
     await api.deleteOrganization(id);
     return {
-      message: `A organização com ID '${id}' foi deletada com sucesso.`,
+      message: `Organization with ID '${id}' was deleted successfully.`,
       relatedTools: [
         {
           tool_name: 'list_organizations',
-          description: 'Listar as organizações restantes para confirmar a exclusão.',
+          description: 'List remaining organizations to confirm the deletion.',
           parameters: []
         }
       ]
     };
   } catch (error) {
-    console.error(`Erro ao deletar a organização ${id}:`, error);
+    console.error(`Error deleting organization ${id}:`, error);
     throw error;
   }
 }

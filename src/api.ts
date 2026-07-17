@@ -1,8 +1,8 @@
 /**
  * @module src/api
- * @description Este módulo contém a classe `AxwayApi`, que serve como um wrapper centralizado
- * para interagir com as APIs do Axway API Gateway e do Axway API Manager.
- * Ele gerencia a configuração, autenticação e execução de todas as chamadas de API.
+ * @description Contains the `AxwayApi` class, a centralized wrapper for interacting
+ * with the Axway API Gateway and Axway API Manager APIs.
+ * It manages configuration, authentication, and execution of all API calls.
  */
 
 import axios, { AxiosRequestConfig, AxiosInstance, AxiosResponse } from "axios";
@@ -17,12 +17,12 @@ import * as zlib from 'zlib';
 const gunzip = promisify(zlib.gunzip);
 
 /**
- * Resolve se o Axios deve rejeitar certificados TLS inválidos ao falar com o Axway.
+ * Resolves whether Axios should reject invalid TLS certificates when talking to Axway.
  *
- * Precedência:
+ * Precedence:
  * 1. `AXWAY_TLS_INSECURE=true` → rejectUnauthorized=false
  * 2. `AXWAY_TLS_REJECT_UNAUTHORIZED=true|false`
- * 3. default → false (compatível com instalação Axway com cert autoassinado)
+ * 3. default → false (compatible with Axway installs that use a self-signed cert)
  */
 function resolveAxwayTlsRejectUnauthorized(): boolean {
   const insecure = (process.env.AXWAY_TLS_INSECURE || "").toLowerCase();
@@ -40,29 +40,29 @@ function resolveAxwayTlsRejectUnauthorized(): boolean {
 }
 
 /**
- * Classe que encapsula a lógica de comunicação com as APIs da Axway.
+ * Encapsulates communication logic with Axway APIs.
  *
- * Configura duas instâncias do Axios:
- * - `apiGateway`: Para interagir com a API de gerenciamento e monitoramento do API Gateway.
- * - `apiManager`: Para interagir com a API do Portal do API Manager.
+ * Configures two Axios instances:
+ * - `apiGateway`: For the API Gateway management and monitoring API.
+ * - `apiManager`: For the API Manager portal API.
  *
- * A configuração é lida a partir de variáveis de ambiente.
- * A classe também inclui interceptadores para um tratamento de erros centralizado.
+ * Configuration is read from environment variables.
+ * The class also includes interceptors for centralized error handling.
  */
 export class AxwayApi {
   private apiGateway: AxiosInstance;
   private apiManager: AxiosInstance;
-  private accessToken: string | null = null; // Reservado para uso futuro (ex: OAuth)
+  private accessToken: string | null = null; // Reserved for future use (e.g. OAuth)
 
   /**
-   * Inicializa as instâncias do cliente de API para o Gateway e o Manager.
+   * Initializes the API client instances for Gateway and Manager.
    *
-   * - Lê as URLs e credenciais das variáveis de ambiente (ex: `AXWAY_GATEWAY_URL`).
-   * - Configura a autenticação Basic para ambas as instâncias.
-   * - Validação TLS configurável via `AXWAY_TLS_REJECT_UNAUTHORIZED` / `AXWAY_TLS_INSECURE`
-   *   (default: rejectUnauthorized=false, típico para cert autoassinado Axway).
-   * - Adiciona interceptadores de resposta para padronizar o tratamento de erros de API.
-   * - Emite avisos no console se as variáveis de ambiente necessárias não estiverem definidas.
+   * - Reads URLs and credentials from environment variables (e.g. `AXWAY_GATEWAY_URL`).
+   * - Configures Basic authentication for both instances.
+   * - TLS validation is configurable via `AXWAY_TLS_REJECT_UNAUTHORIZED` / `AXWAY_TLS_INSECURE`
+   *   (default: rejectUnauthorized=false, typical for Axway self-signed certs).
+   * - Adds response interceptors to standardize API error handling.
+   * - Emits console warnings if required environment variables are not set.
    */
   constructor() {
     const rejectUnauthorized = resolveAxwayTlsRejectUnauthorized();
@@ -142,10 +142,10 @@ export class AxwayApi {
                     throw new Error(errorMessage);
 
                   } else if (error.request) {
-                    throw new Error("Erro de Rede: Nenhuma resposta recebida da API Axway. Verifique sua conexão e a configuração do endpoint da API.");
+                    throw new Error("Network Error: No response received from the Axway API. Check your connection and the API endpoint configuration.");
                   
                   } else {
-                    throw new Error(`Erro na Solicitação: ${error.message}. Verifique os parâmetros da sua solicitação e tente novamente.`);
+                    throw new Error(`Request Error: ${error.message}. Check your request parameters and try again.`);
                   }
             });
         }
@@ -172,33 +172,33 @@ export class AxwayApi {
     }
   }
 
-  // Exemplo de uso para um método GET
+  // Example usage for a GET method
   async getGateway(path: string, config?: AxiosRequestConfig) {
     return this.logAndRequest(this.apiGateway, { ...config, method: 'get', url: path });
   }
 
-  // Exemplo de uso para um método POST
+  // Example usage for a POST method
   async postGateway(path: string, data?: any, config?: AxiosRequestConfig) {
     return this.logAndRequest(this.apiGateway, { ...config, method: 'post', url: path, data });
   }
 
-  // --- Métodos da API de Topologia ---
+  // --- Topology API methods ---
 
   /**
-   * Obtém a topologia do domínio do API Gateway, incluindo grupos e instâncias.
-   * @returns Uma promessa que resolve para os dados da topologia.
+   * Gets the API Gateway domain topology, including groups and instances.
+   * @returns A promise that resolves to the topology data.
    */
   async listTopology(): Promise<any> {
     const response = await this.apiGateway.get("/topology");
     return response.data;
   }
 
-  // --- Métodos da API de Monitoramento ---
+  // --- Monitoring API methods ---
 
   /**
-   * Obtém um resumo do tráfego para uma instância específica do API Gateway.
-   * @param instanceId O ID da instância do API Gateway (ex: 'instance-1').
-   * @returns Uma promessa que resolve para as métricas de resumo do tráfego.
+   * Gets a traffic summary for a specific API Gateway instance.
+   * @param instanceId The API Gateway instance ID (e.g. 'instance-1').
+   * @returns A promise that resolves to the traffic summary metrics.
    */
   async getInstanceTraffic(instanceId: string): Promise<any> {
     const response = await this.apiGateway.get(`/router/service/${instanceId}/api/monitoring/summary`);
@@ -206,10 +206,10 @@ export class AxwayApi {
   }
 
   /**
-   * Obtém métricas de tráfego para um serviço específico em uma instância do API Gateway.
-   * @param instanceId O ID da instância.
-   * @param serviceName O nome do serviço (ex: 'Default Services').
-   * @returns Uma promessa que resolve para as métricas do serviço.
+   * Gets traffic metrics for a specific service on an API Gateway instance.
+   * @param instanceId The instance ID.
+   * @param serviceName The service name (e.g. 'Default Services').
+   * @returns A promise that resolves to the service metrics.
    */
   async getServiceTraffic(instanceId: string, serviceName: string): Promise<any> {
     const encodedServiceName = encodeURIComponent(serviceName);
@@ -219,11 +219,11 @@ export class AxwayApi {
   }
 
   /**
-   * Obtém uma linha do tempo de métricas para uma instância específica.
-   * @param instanceId O ID da instância.
-   * @param timeline O intervalo de tempo para a linha do tempo (ex: '10m', '1h').
-   * @param metricTypes Os tipos de métrica a serem recuperados (ex: ['successes', 'failures']).
-   * @returns Uma promessa que resolve para os dados da linha do tempo.
+   * Gets a metrics timeline for a specific instance.
+   * @param instanceId The instance ID.
+   * @param timeline The time window for the timeline (e.g. '10m', '1h').
+   * @param metricTypes The metric types to retrieve (e.g. ['successes', 'failures']).
+   * @returns A promise that resolves to the timeline data.
    */
   async getInstanceMetricsTimeline(instanceId: string, timeline: string, metricTypes: string[]): Promise<any> {
     const params = new URLSearchParams();
@@ -237,10 +237,10 @@ export class AxwayApi {
   }
 
   /**
-   * Pesquisa por eventos de tráfego (transações) em uma instância.
-   * @param instanceId O ID da instância.
-   * @param params Um objeto `URLSearchParams` contendo os filtros de pesquisa.
-   * @returns Uma promessa que resolve para a lista de eventos de tráfego encontrados.
+   * Searches for traffic events (transactions) on an instance.
+   * @param instanceId The instance ID.
+   * @param params A `URLSearchParams` object containing the search filters.
+   * @returns A promise that resolves to the list of matching traffic events.
    */
   async searchTrafficEvents(instanceId: string, params: URLSearchParams): Promise<any> {
     const path = `/router/service/${instanceId}/ops/search?${params.toString()}`;
@@ -249,13 +249,13 @@ export class AxwayApi {
   }
 
   /**
-   * Obtém detalhes para um evento de tráfego específico.
-   * @param instanceId O ID da instância.
-   * @param protocol O protocolo da transação (ex: 'http').
-   * @param correlationId O ID de correlação da transação.
-   * @param leg O "leg" (segmento) da transação, geralmente 0.
-   * @param params Parâmetros adicionais, como `includeHeaders`.
-   * @returns Uma promessa que resolve para os detalhes da transação.
+   * Gets details for a specific traffic event.
+   * @param instanceId The instance ID.
+   * @param protocol The transaction protocol (e.g. 'http').
+   * @param correlationId The transaction correlation ID.
+   * @param leg The transaction "leg" (segment), usually 0.
+   * @param params Additional parameters, such as `includeHeaders`.
+   * @returns A promise that resolves to the transaction details.
    */
   async getTrafficEventDetails(instanceId: string, protocol: string, correlationId: string, leg: number, params: URLSearchParams): Promise<any> {
     const path = `/router/service/${instanceId}/ops/${protocol}/${correlationId}/${leg}/getinfo?${params.toString()}`;
@@ -264,12 +264,12 @@ export class AxwayApi {
   }
 
   /**
-   * Obtém o payload (carga útil) de uma transação.
-   * @param instanceId O ID da instância.
-   * @param correlationId O ID de correlação da transação.
-   * @param leg O "leg" da transação.
-   * @param direction A direção do payload ('received' do cliente, 'sent' para o cliente).
-   * @returns Uma promessa que resolve para o conteúdo do payload como texto.
+   * Gets the payload of a transaction.
+   * @param instanceId The instance ID.
+   * @param correlationId The transaction correlation ID.
+   * @param leg The transaction "leg".
+   * @param direction Payload direction ('received' from client, 'sent' to client).
+   * @returns A promise that resolves to the payload content as text.
    */
   async getTrafficEventPayload(instanceId: string, correlationId: string, leg: number, direction: 'received' | 'sent'): Promise<any> {
     const path = `/router/service/${instanceId}/ops/stream/${correlationId}/${leg}/${direction}`;
@@ -278,11 +278,11 @@ export class AxwayApi {
   }
 
   /**
-   * Obtém os dados de rastreamento (trace) para uma transação.
-   * @param instanceId O ID da instância.
-   * @param correlationId O ID de correlação da transação.
-   * @param params Parâmetros adicionais, como `includeSentData`.
-   * @returns Uma promessa que resolve para os dados de trace.
+   * Gets trace data for a transaction.
+   * @param instanceId The instance ID.
+   * @param correlationId The transaction correlation ID.
+   * @param params Additional parameters, such as `includeSentData`.
+   * @returns A promise that resolves to the trace data.
    */
   async getTrafficEventTrace(instanceId: string, correlationId: string, params: URLSearchParams): Promise<any> {
     const path = `/router/service/${instanceId}/ops/trace/${correlationId}?${params.toString()}`;
@@ -290,11 +290,11 @@ export class AxwayApi {
     return response.data;
   }
 
-  // --- Métodos do API Manager (Organizações) ---
+  // --- API Manager methods (Organizations) ---
 
   /**
-   * Lista todas as organizações no API Manager.
-   * @returns Uma promessa que resolve para a lista de organizações.
+   * Lists all organizations in the API Manager.
+   * @returns A promise that resolves to the list of organizations.
    */
   async listOrganizations(): Promise<any> {
     const response = await this.apiManager.get('/organizations');
@@ -302,9 +302,9 @@ export class AxwayApi {
   }
 
   /**
-   * Obtém uma organização específica pelo seu ID.
-   * @param id O ID da organização.
-   * @returns Uma promessa que resolve para os dados da organização.
+   * Gets a specific organization by ID.
+   * @param id The organization ID.
+   * @returns A promise that resolves to the organization data.
    */
   async getOrganization(id: string): Promise<any> {
     const response = await this.apiManager.get(`/organizations/${id}`);
@@ -312,9 +312,9 @@ export class AxwayApi {
   }
 
   /**
-   * Cria uma nova organização.
-   * @param organizationData Um objeto contendo os dados da nova organização (nome, descrição, etc.).
-   * @returns Uma promessa que resolve para os dados da organização criada.
+   * Creates a new organization.
+   * @param organizationData An object containing the new organization data (name, description, etc.).
+   * @returns A promise that resolves to the created organization data.
    */
   async createOrganization(organizationData: any): Promise<any> {
     const response = await this.apiManager.post('/organizations', organizationData, { headers: { 'Content-Type': 'application/json' } });
@@ -322,10 +322,10 @@ export class AxwayApi {
   }
 
   /**
-   * Atualiza uma organização existente.
-   * @param id O ID da organização a ser atualizada.
-   * @param organizationData Um objeto com os campos a serem atualizados.
-   * @returns Uma promessa que resolve para os dados da organização atualizada.
+   * Updates an existing organization.
+   * @param id The ID of the organization to update.
+   * @param organizationData An object with the fields to update.
+   * @returns A promise that resolves to the updated organization data.
    */
   async updateOrganization(id: string, organizationData: any): Promise<any> {
     const response = await this.apiManager.put(`/organizations/${id}`, organizationData, { headers: { 'Content-Type': 'application/json' } });
@@ -333,20 +333,20 @@ export class AxwayApi {
   }
 
   /**
-   * Deleta uma organização pelo seu ID.
-   * @param id O ID da organização a ser deletada.
-   * @returns Uma promessa que resolve quando a operação é concluída.
+   * Deletes an organization by ID.
+   * @param id The ID of the organization to delete.
+   * @returns A promise that resolves when the operation completes.
    */
   async deleteOrganization(id: string): Promise<any> {
     const response = await this.apiManager.delete(`/organizations/${id}`);
     return response.data;
   }
 
-  // --- Métodos do API Manager (Usuários) ---
+  // --- API Manager methods (Users) ---
 
   /**
-   * Lista todos os usuários.
-   * @returns Uma promessa que resolve para a lista de usuários.
+   * Lists all users.
+   * @returns A promise that resolves to the list of users.
    */
   async listUsers(): Promise<any> {
     const response = await this.apiManager.get('/users');
@@ -354,9 +354,9 @@ export class AxwayApi {
   }
 
   /**
-   * Obtém um usuário específico pelo seu ID.
-   * @param id O ID do usuário.
-   * @returns Uma promessa que resolve para os dados do usuário.
+   * Gets a specific user by ID.
+   * @param id The user ID.
+   * @returns A promise that resolves to the user data.
    */
   async getUser(id: string): Promise<any> {
     const response = await this.apiManager.get(`/users/${id}`);
@@ -364,9 +364,9 @@ export class AxwayApi {
   }
 
   /**
-   * Cria um novo usuário.
-   * @param userData Um objeto contendo os dados do novo usuário.
-   * @returns Uma promessa que resolve para os dados do usuário criado.
+   * Creates a new user.
+   * @param userData An object containing the new user data.
+   * @returns A promise that resolves to the created user data.
    */
   async createUser(userData: any): Promise<any> {
     const response = await this.apiManager.post('/users', userData, { headers: { 'Content-Type': 'application/json' } });
@@ -374,10 +374,10 @@ export class AxwayApi {
   }
 
   /**
-   * Atualiza um usuário existente.
-   * @param id O ID do usuário a ser atualizado.
-   * @param userData Um objeto com os campos a serem atualizados.
-   * @returns Uma promessa que resolve para os dados do usuário atualizado.
+   * Updates an existing user.
+   * @param id The ID of the user to update.
+   * @param userData An object with the fields to update.
+   * @returns A promise that resolves to the updated user data.
    */
   async updateUser(id: string, userData: any): Promise<any> {
     const response = await this.apiManager.put(`/users/${id}`, userData, { headers: { 'Content-Type': 'application/json' } });
@@ -385,20 +385,20 @@ export class AxwayApi {
   }
 
   /**
-   * Deleta um usuário pelo seu ID.
-   * @param id O ID do usuário a ser deletado.
-   * @returns Uma promessa que resolve quando a operação é concluída.
+   * Deletes a user by ID.
+   * @param id The ID of the user to delete.
+   * @returns A promise that resolves when the operation completes.
    */
   async deleteUser(id: string): Promise<any> {
     const response = await this.apiManager.delete(`/users/${id}`);
     return response.data;
   }
 
-  // --- Métodos do API Manager (Aplicações) ---
+  // --- API Manager methods (Applications) ---
 
   /**
-   * Lista todas as aplicações visíveis para o usuário autenticado.
-   * @returns Uma promessa que resolve para a lista de aplicações.
+   * Lists all applications visible to the authenticated user.
+   * @returns A promise that resolves to the list of applications.
    */
   async listApplications(): Promise<any> {
     const response = await this.apiManager.get('/applications');
@@ -406,9 +406,9 @@ export class AxwayApi {
   }
 
   /**
-   * Obtém uma aplicação específica pelo seu ID.
-   * @param id O ID da aplicação.
-   * @returns Uma promessa que resolve para os dados da aplicação.
+   * Gets a specific application by ID.
+   * @param id The application ID.
+   * @returns A promise that resolves to the application data.
    */
   async getApplication(id: string): Promise<any> {
     const response = await this.apiManager.get(`/applications/${id}`);
@@ -416,9 +416,9 @@ export class AxwayApi {
   }
 
   /**
-   * Obtém as API Keys associadas a uma aplicação.
-   * @param id O ID da aplicação.
-   * @returns Uma promessa que resolve para a lista de API Keys.
+   * Gets the API keys associated with an application.
+   * @param id The application ID.
+   * @returns A promise that resolves to the list of API keys.
    */
   async getApiKeysForApplication(id: string): Promise<any> {
     const response = await this.apiManager.get(`/applications/${id}/apikeys`);
@@ -426,9 +426,9 @@ export class AxwayApi {
   }
 
   /**
-   * Obtém as credenciais OAuth associadas a uma aplicação.
-   * @param id O ID da aplicação.
-   * @returns Uma promessa que resolve para as credenciais OAuth.
+   * Gets the OAuth credentials associated with an application.
+   * @param id The application ID.
+   * @returns A promise that resolves to the OAuth credentials.
    */
   async getOAuthCredentialsForApplication(id: string): Promise<any> {
     const response = await this.apiManager.get(`/applications/${id}/oauth`);
@@ -436,10 +436,10 @@ export class AxwayApi {
   }
 
   /**
-   * Cria uma nova API Key para uma aplicação.
-   * @param appId O ID da aplicação.
-   * @param apiKeyData Dados para a nova API Key (ex: segredo, estado 'enabled').
-   * @returns Uma promessa que resolve para os dados da API Key criada.
+   * Creates a new API key for an application.
+   * @param appId The application ID.
+   * @param apiKeyData Data for the new API key (e.g. secret, 'enabled' state).
+   * @returns A promise that resolves to the created API key data.
    */
   async createApiKey(appId: string, apiKeyData: any): Promise<any> {
     const response = await this.apiManager.post(`/applications/${appId}/apikeys`, apiKeyData, { headers: { 'Content-Type': 'application/json' } });
@@ -447,10 +447,10 @@ export class AxwayApi {
   }
 
   /**
-   * Cria uma nova credencial OAuth (client ID e secret) para uma aplicação.
-   * @param appId O ID da aplicação.
-   * @param credentialData Dados para a nova credencial (ex: URIs de redirecionamento).
-   * @returns Uma promessa que resolve para a credencial criada.
+   * Creates a new OAuth credential (client ID and secret) for an application.
+   * @param appId The application ID.
+   * @param credentialData Data for the new credential (e.g. redirect URIs).
+   * @returns A promise that resolves to the created credential.
    */
   async createOAuthCredential(appId: string, credentialData: any): Promise<any> {
     const response = await this.apiManager.post(`/applications/${appId}/oauth`, credentialData, { headers: { 'Content-Type': 'application/json' } });
@@ -458,20 +458,20 @@ export class AxwayApi {
   }
 
   /**
-   * Obtém a lista de permissões (ACL) para uma aplicação.
-   * @param id O ID da aplicação.
-   * @returns Uma promessa que resolve para a lista de permissões.
+   * Gets the permission list (ACL) for an application.
+   * @param id The application ID.
+   * @returns A promise that resolves to the list of permissions.
    */
   async getPermissionsForApplication(id: string): Promise<any> {
     const response = await this.apiManager.get(`/applications/${id}/permissions`);
     return response.data;
   }
 
-  // --- Métodos do API Manager (Proxies de API) ---
+  // --- API Manager methods (API Proxies) ---
 
   /**
-   * Lista todas os proxies de API (APIs de Frontend).
-   * @returns Uma promessa que resolve para a lista de proxies.
+   * Lists all API proxies (frontend APIs).
+   * @returns A promise that resolves to the list of proxies.
    */
   async listApiProxies(): Promise<any> {
     const response = await this.apiManager.get('/proxies');
@@ -479,9 +479,9 @@ export class AxwayApi {
   }
 
   /**
-   * Obtém um proxy de API específico pelo seu ID.
-   * @param id O ID do proxy.
-   * @returns Uma promessa que resolve para os dados do proxy.
+   * Gets a specific API proxy by ID.
+   * @param id The proxy ID.
+   * @returns A promise that resolves to the proxy data.
    */
   async getApiProxy(id: string): Promise<any> {
     const response = await this.apiManager.get(`/proxies/${id}`);
@@ -489,9 +489,9 @@ export class AxwayApi {
   }
 
   /**
-   * Cria um novo proxy de API.
-   * @param proxyData Dados para o novo proxy (nome, caminho, ID da API de backend, etc.).
-   * @returns Uma promessa que resolve para os dados do proxy criado.
+   * Creates a new API proxy.
+   * @param proxyData Data for the new proxy (name, path, backend API ID, etc.).
+   * @returns A promise that resolves to the created proxy data.
    */
   async createApiProxy(proxyData: any): Promise<any> {
     const response = await this.apiManager.post('/proxies', proxyData, { headers: { 'Content-Type': 'application/json' } });
@@ -499,10 +499,10 @@ export class AxwayApi {
   }
 
   /**
-   * Atualiza um proxy de API existente.
-   * @param id O ID do proxy a ser atualizado.
-   * @param proxyData Um objeto com os campos a serem atualizados.
-   * @returns Uma promessa que resolve para os dados do proxy atualizado.
+   * Updates an existing API proxy.
+   * @param id The ID of the proxy to update.
+   * @param proxyData An object with the fields to update.
+   * @returns A promise that resolves to the updated proxy data.
    */
   async updateApiProxy(id: string, proxyData: any): Promise<any> {
     const response = await this.apiManager.put(`/proxies/${id}`, proxyData, { headers: { 'Content-Type': 'application/json' } });
@@ -510,9 +510,9 @@ export class AxwayApi {
   }
 
   /**
-   * Deleta um proxy de API pelo seu ID.
-   * @param id O ID do proxy a ser deletado.
-   * @returns Uma promessa que resolve quando a operação é concluída.
+   * Deletes an API proxy by ID.
+   * @param id The ID of the proxy to delete.
+   * @returns A promise that resolves when the operation completes.
    */
   async deleteApiProxy(id: string): Promise<any> {
     const response = await this.apiManager.delete(`/proxies/${id}`);
@@ -520,9 +520,9 @@ export class AxwayApi {
   }
 
   /**
-   * Publica um proxy de API, tornando-o disponível para consumo.
-   * @param id O ID da API a ser publicada.
-   * @returns Uma promessa que resolve quando a API é publicada.
+   * Publishes an API proxy, making it available for consumption.
+   * @param id The ID of the API to publish.
+   * @returns A promise that resolves when the API is published.
    */
   async publishApi(id: string): Promise<any> {
     const response = await this.apiManager.post(
@@ -534,9 +534,9 @@ export class AxwayApi {
   }
 
   /**
-   * Despublica um proxy de API, tornando-o indisponível.
-   * @param id O ID da API a ser despublicada.
-   * @returns Uma promessa que resolve quando a API é despublicada.
+   * Unpublishes an API proxy, making it unavailable.
+   * @param id The ID of the API to unpublish.
+   * @returns A promise that resolves when the API is unpublished.
    */
   async unpublishApi(id: string): Promise<any> {
     const response = await this.apiManager.post(
@@ -548,9 +548,9 @@ export class AxwayApi {
   }
 
   /**
-   * Marca um proxy de API como obsoleto (deprecated).
-   * @param id O ID da API a ser marcada como obsoleta.
-   * @returns Uma promessa que resolve quando a API é marcada como obsoleta.
+   * Marks an API proxy as deprecated.
+   * @param id The ID of the API to mark as deprecated.
+   * @returns A promise that resolves when the API is marked as deprecated.
    */
   async deprecateApi(id: string): Promise<any> {
     const payload = { "state": "deprecated" };
@@ -560,11 +560,11 @@ export class AxwayApi {
     return response.data;
   }
 
-  // --- Métodos do API Manager (Repositório de APIs de Backend) ---
+  // --- API Manager methods (Backend API Repository) ---
 
   /**
-   * Lista todas as APIs de backend do repositório.
-   * @returns Uma promessa que resolve para a lista de APIs de backend.
+   * Lists all backend APIs in the repository.
+   * @returns A promise that resolves to the list of backend APIs.
    */
   async listBackendApis(): Promise<any> {
     const response = await this.apiManager.get('/apirepo');
@@ -572,11 +572,11 @@ export class AxwayApi {
   }
 
   /**
-   * Importa uma API de backend a partir de uma URL (ex: Swagger/OpenAPI).
-   * @param url A URL da definição da API.
-   * @param organizationId O ID da organização que será dona da API.
-   * @param name Um nome customizado opcional para a API de backend.
-   * @returns Uma promessa que resolve para os dados da API importada.
+   * Imports a backend API from a URL (e.g. Swagger/OpenAPI).
+   * @param url The API definition URL.
+   * @param organizationId The ID of the organization that will own the API.
+   * @param name An optional custom name for the backend API.
+   * @returns A promise that resolves to the imported API data.
    */
   async importBackendApiFromUrl(url: string, organizationId: string, name?: string): Promise<any> {
     const form = new FormData();
@@ -591,11 +591,11 @@ export class AxwayApi {
   }
 
   /**
-   * Importa uma API de backend a partir de um arquivo local.
-   * @param filePath O caminho para o arquivo de definição da API (ex: swagger.json).
-   * @param organizationId O ID da organização que será dona da API.
-   * @param name Um nome customizado opcional para a API de backend.
-   * @returns Uma promessa que resolve para os dados da API importada.
+   * Imports a backend API from a local file.
+   * @param filePath Path to the API definition file (e.g. swagger.json).
+   * @param organizationId The ID of the organization that will own the API.
+   * @param name An optional custom name for the backend API.
+   * @returns A promise that resolves to the imported API data.
    */
   async importBackendApiFromFile(filePath: string, organizationId: string, name?: string): Promise<any> {
     const form = new FormData();
@@ -610,21 +610,21 @@ export class AxwayApi {
   }
 
   /**
-   * Deleta uma API de backend do repositório.
-   * @param id O ID da API de backend a ser deletada.
-   * @returns Uma promessa que resolve quando a operação é concluída.
+   * Deletes a backend API from the repository.
+   * @param id The ID of the backend API to delete.
+   * @returns A promise that resolves when the operation completes.
    */
   async deleteBackendApi(id: string): Promise<any> {
     const response = await this.apiManager.delete(`/apirepo/${id}`);
     return response.data;
   }
 
-  // --- Métodos do API Manager (Controle de Acesso) ---
+  // --- API Manager methods (Access Control) ---
 
   /**
-   * Lista todas as APIs de frontend às quais uma aplicação tem acesso.
-   * @param applicationId O ID da aplicação.
-   * @returns Uma promessa que resolve para a lista de APIs com acesso.
+   * Lists all frontend APIs that an application has access to.
+   * @param applicationId The application ID.
+   * @returns A promise that resolves to the list of APIs with access.
    */
   async listApiAccess(applicationId: string): Promise<any> {
     const response = await this.apiManager.get(`/applications/${applicationId}/apis`);
@@ -632,10 +632,10 @@ export class AxwayApi {
   }
 
   /**
-   * Concede a uma aplicação acesso a uma API de frontend.
-   * @param applicationId O ID da aplicação.
-   * @param apiId O ID do proxy de API (frontend) ao qual o acesso será concedido.
-   * @returns Uma promessa que resolve quando o acesso é concedido.
+   * Grants an application access to a frontend API.
+   * @param applicationId The application ID.
+   * @param apiId The frontend API proxy ID to grant access to.
+   * @returns A promise that resolves when access is granted.
    */
   async grantApiAccess(applicationId: string, apiId: string): Promise<any> {
     const payload = {
@@ -649,21 +649,21 @@ export class AxwayApi {
   }
 
   /**
-   * Revoga o acesso de uma aplicação a uma API de frontend.
-   * @param applicationId O ID da aplicação.
-   * @param apiId O ID do proxy de API do qual o acesso será revogado.
-   * @returns Uma promessa que resolve quando o acesso é revogado.
+   * Revokes an application's access to a frontend API.
+   * @param applicationId The application ID.
+   * @param apiId The API proxy ID from which access will be revoked.
+   * @returns A promise that resolves when access is revoked.
    */
   async revokeApiAccess(applicationId: string, apiId: string): Promise<any> {
     const response = await this.apiManager.delete(`/applications/${applicationId}/apis/${apiId}`);
     return response.data;
   }
 
-  // --- Outros Métodos ---
+  // --- Other methods ---
 
   /**
-   * Lista a configuração de quais eventos disparam alertas.
-   * @returns Uma promessa que resolve para a configuração de alertas.
+   * Lists the configuration of which events trigger alerts.
+   * @returns A promise that resolves to the alert configuration.
    */
   async listAlerts(): Promise<any> {
     const response = await this.apiGateway.get('/alerts');
@@ -671,9 +671,9 @@ export class AxwayApi {
   }
 
   /**
-   * Atualiza a configuração de gatilhos de alerta.
-   * @param settings Um objeto onde as chaves são os nomes dos alertas e os valores são booleanos.
-   * @returns Uma promessa que resolve quando a configuração é atualizada.
+   * Updates the alert trigger configuration.
+   * @param settings An object where keys are alert names and values are booleans.
+   * @returns A promise that resolves when the configuration is updated.
    */
   async updateAlertSettings(settings: any): Promise<any> {
     const response = await this.apiGateway.put('/alerts', settings, { headers: { 'Content-Type': 'application/json' } });
@@ -681,9 +681,9 @@ export class AxwayApi {
   }
 
   /**
-   * Obtém as cotas de aplicação (sistema ou customizada).
-   * @param applicationId O ID da aplicação.
-   * @returns Uma promessa que resolve para a configuração de cotas da aplicação.
+   * Gets application quotas (system or custom).
+   * @param applicationId The application ID.
+   * @returns A promise that resolves to the application quota configuration.
    */
   async getApplicationQuotas(applicationId: string): Promise<any> {
     const response = await this.apiManager.get(`/quotas/applications/${applicationId}`);
@@ -691,10 +691,10 @@ export class AxwayApi {
   }
 
   /**
-   * Atualiza as cotas para uma aplicação específica.
-   * @param applicationId O ID da aplicação.
-   * @param quotaData O objeto de cota a ser aplicado.
-   * @returns Uma promessa que resolve quando as cotas são atualizadas.
+   * Updates quotas for a specific application.
+   * @param applicationId The application ID.
+   * @param quotaData The quota object to apply.
+   * @returns A promise that resolves when the quotas are updated.
    */
   async updateApplicationQuotas(applicationId: string, quotaData: any): Promise<any> {
     const response = await this.apiManager.put(`/quotas/applications/${applicationId}`, quotaData, { headers: { 'Content-Type': 'application/json' } });
@@ -702,9 +702,9 @@ export class AxwayApi {
   }
 
   /**
-   * Obtém um relatório de resumo para métricas de aplicação ou API.
-   * @param params Parâmetros para filtrar o relatório de métricas.
-   * @returns Uma promessa que resolve para os dados do relatório.
+   * Gets a summary report for application or API metrics.
+   * @param params Parameters to filter the metrics report.
+   * @returns A promise that resolves to the report data.
    */
   async getMetrics({ type, level, from, to, client, service, method, organization, reportsubtype }: any): Promise<any> {
     const params = new URLSearchParams({
@@ -725,12 +725,12 @@ export class AxwayApi {
   }
 
   /**
-   * Obtém a configuração do API Manager.
-   * Esta operação acessa o endpoint `/config` do API Manager para recuperar
-   * informações sobre a configuração do sistema, incluindo políticas globais,
-   * configurações de segurança, limites de sessão, etc.
+   * Gets the API Manager configuration.
+   * This operation calls the API Manager `/config` endpoint to retrieve
+   * system configuration information, including global policies,
+   * security settings, session limits, etc.
    *
-   * @returns Promise<any> - A configuração completa do API Manager
+   * @returns Promise<any> - The full API Manager configuration
    */
   async getManagerConfig(): Promise<any> {
     try {
@@ -747,7 +747,7 @@ export class AxwayApi {
         }
       });
       
-      // Retornar apenas os dados da resposta, não o objeto response completo
+      // Return only the response data, not the full response object
       return response.data;
     } catch (error) {
       console.error('Error getting API Manager configuration:', error);

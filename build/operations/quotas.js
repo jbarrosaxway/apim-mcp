@@ -1,12 +1,12 @@
 /**
  * @module src/operations/quotas
- * @description Este módulo contém as operações (ferramentas) para gerenciar as
- * cotas de uso de API para aplicações no Axway API Manager.
+ * @description This module contains the operations (tools) for managing
+ * API usage quotas for applications in the Axway API Manager.
  */
 /**
- * Transforma o objeto de cota bruto da API em um formato mais limpo e legível.
+ * Transforms the raw API quota object into a cleaner, more readable format.
  * @param quota O objeto de cota bruto.
- * @returns Um objeto de cota formatado com suas restrições.
+ * @returns A formatted quota object with its restrictions.
  * @internal
  */
 function transformQuota(quota) {
@@ -31,10 +31,10 @@ function transformQuota(quota) {
     };
 }
 /**
- * Ferramenta para obter a cota efetiva (de sistema ou customizada) para uma aplicação específica.
- * @param api Instância da classe AxwayApi.
- * @param applicationId O ID da aplicação para a qual a cota será recuperada.
- * @returns Um objeto contendo os detalhes da cota da aplicação.
+ * Tool to get the effective quota (system or custom) for a specific application.
+ * @param api AxwayApi class instance.
+ * @param applicationId The ID of the application whose quota will be retrieved.
+ * @returns An object containing the application quota details.
  */
 export async function getApplicationQuotas(api, applicationId) {
     try {
@@ -45,7 +45,7 @@ export async function getApplicationQuotas(api, applicationId) {
             relatedTools: [
                 {
                     tool_name: 'update_application_quotas',
-                    description: `Modificar as cotas para a aplicação ${applicationId}.`,
+                    description: `Modify quotas for application ${applicationId}.`,
                     parameters: [
                         { name: 'applicationId', value: applicationId },
                         { name: 'messages_per_second', value: '10' }
@@ -53,27 +53,27 @@ export async function getApplicationQuotas(api, applicationId) {
                 },
                 {
                     tool_name: 'list_applications',
-                    description: 'Listar outras aplicações para verificar suas cotas.',
+                    description: 'List other applications to check their quotas.',
                     parameters: []
                 }
             ]
         };
     }
     catch (error) {
-        console.error(`Erro ao obter as cotas para a aplicação ${applicationId}:`, error);
+        console.error(`Error getting quotas for application ${applicationId}:`, error);
         throw error;
     }
 }
 /**
- * Ferramenta para atualizar a cota de uma aplicação para um número específico de mensagens por segundo.
+ * Tool to update an application quota to a specific number of messages per second.
  *
- * Esta é uma ferramenta simplificada que cria uma única restrição para todas as APIs (`*`)
- * e todos os métodos (`*`) com o limite fornecido.
+ * This is a simplified tool that creates a single restriction for all APIs (`*`)
+ * and all methods (`*`) with the provided limit.
  *
- * @param api Instância da classe AxwayApi.
- * @param applicationId O ID da aplicação para a qual a cota será atualizada.
- * @param messages_per_second O número máximo de mensagens (requisições) por segundo.
- * @returns Um objeto de confirmação da operação.
+ * @param api AxwayApi class instance.
+ * @param applicationId The ID of the application whose quota will be updated.
+ * @param messages_per_second The maximum number of messages (requests) per second.
+ * @returns A confirmation object for the operation.
  */
 export async function updateApplicationQuotas(api, applicationId, messages_per_second) {
     try {
@@ -93,18 +93,18 @@ export async function updateApplicationQuotas(api, applicationId, messages_per_s
         };
         await api.updateApplicationQuotas(applicationId, { restrictions: [quotaData.restrictions[0]] }); // A API espera um objeto com a propriedade 'restrictions'
         return {
-            message: `Cotas para a aplicação ${applicationId} atualizadas com sucesso para ${messages_per_second} mensagens/segundo.`,
+            message: `Quotas for application ${applicationId} updated successfully to ${messages_per_second} messages/second.`,
             relatedTools: [
                 {
                     tool_name: 'get_application_quotas',
-                    description: `Verificar as alterações na cota da aplicação ${applicationId}.`,
+                    description: `Verify the quota changes for application ${applicationId}.`,
                     parameters: [{ name: 'applicationId', value: applicationId }]
                 }
             ]
         };
     }
     catch (error) {
-        console.error(`Erro ao atualizar as cotas para a aplicação ${applicationId}:`, error);
+        console.error(`Error updating quotas for application ${applicationId}:`, error);
         throw error;
     }
 }

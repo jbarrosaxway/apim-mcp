@@ -1,13 +1,13 @@
 /**
  * @module src/operations/access
- * @description Este módulo contém as operações (ferramentas) para gerenciar o controle de acesso
- * entre Aplicações e APIs (Proxies) no Axway API Manager.
- * As funções aqui definidas permitem listar, conceder e revogar o acesso.
+ * @description This module contains the operations (tools) for managing access control
+ * between Applications and APIs (Proxies) in the Axway API Manager.
+ * The functions defined here allow listing, granting, and revoking access.
  */
 /**
- * Transforma os dados brutos de acesso à API em um formato mais limpo e estruturado.
- * @param access O objeto de acesso à API bruto retornado pela API da Axway.
- * @returns Um objeto de acesso à API formatado.
+ * Transforms raw API access data into a cleaner, more structured format.
+ * @param access The raw API access object returned by the Axway API.
+ * @returns A formatted API access object.
  * @internal
  */
 function transformApiAccess(access) {
@@ -21,12 +21,12 @@ function transformApiAccess(access) {
     };
 }
 /**
- * Ferramenta para listar todas as APIs às quais uma determinada aplicação tem acesso.
+ * Tool to list all APIs that a given application has access to.
  *
- * @param api Instância da classe AxwayApi para realizar as chamadas.
- * @param applicationId O ID da aplicação para a qual o acesso será verificado.
- * @returns Um objeto contendo o ID da aplicação e uma lista de seus acessos a APIs,
- *          juntamente com sugestões de ferramentas relacionadas.
+ * @param api AxwayApi class instance used to perform the calls.
+ * @param applicationId The ID of the application whose access will be checked.
+ * @returns An object containing the application ID and a list of its API accesses,
+ *          along with related tool suggestions.
  */
 export async function listApiAccess(api, applicationId) {
     try {
@@ -38,17 +38,17 @@ export async function listApiAccess(api, applicationId) {
             relatedTools: [
                 {
                     tool_name: 'grant_api_access',
-                    description: `Conceder a esta aplicação (${applicationId}) acesso a outra API.`,
+                    description: `Grant this application (${applicationId}) access to another API.`,
                     parameters: [{ name: 'applicationId', value: applicationId }]
                 },
                 {
                     tool_name: 'list_api_proxies',
-                    description: 'Listar todas as APIs de frontend disponíveis para encontrar outros IDs de API.',
+                    description: 'List all available frontend APIs to find other API IDs.',
                     parameters: []
                 },
                 ...rawAccessList.map((access) => ({
                     tool_name: 'revoke_api_access',
-                    description: `Revogar o acesso à API com ID ${access.apiId}.`,
+                    description: `Revoke access to the API with ID ${access.apiId}.`,
                     parameters: [
                         { name: 'applicationId', value: applicationId },
                         { name: 'apiId', value: access.apiId }
@@ -58,33 +58,33 @@ export async function listApiAccess(api, applicationId) {
         };
     }
     catch (error) {
-        console.error(`Erro ao listar o acesso à API para a aplicação ${applicationId}:`, error);
+        console.error(`Error listing API access for application ${applicationId}:`, error);
         throw error;
     }
 }
 /**
- * Ferramenta para conceder a uma aplicação acesso a uma API de frontend (proxy).
+ * Tool to grant an application access to a frontend API (proxy).
  *
- * @param api Instância da classe AxwayApi.
- * @param applicationId O ID da aplicação que receberá o acesso.
- * @param apiId O ID da API (proxy) à qual o acesso será concedido.
- * @returns Um objeto de confirmação com detalhes do novo acesso criado.
+ * @param api AxwayApi class instance.
+ * @param applicationId The ID of the application that will receive access.
+ * @param apiId The API (proxy) ID to which access will be granted.
+ * @returns A confirmation object with details of the newly created access.
  */
 export async function grantApiAccess(api, applicationId, apiId) {
     try {
         const newAccess = await api.grantApiAccess(applicationId, apiId);
         return {
-            message: `Acesso à API ${apiId} concedido com sucesso para a aplicação ${applicationId}.`,
+            message: `API access ${apiId} granted successfully to application ${applicationId}.`,
             apiAccess: transformApiAccess(newAccess),
             relatedTools: [
                 {
                     tool_name: 'list_api_access',
-                    description: `Ver todos os acessos para a aplicação ${applicationId}.`,
+                    description: `View all access grants for application ${applicationId}.`,
                     parameters: [{ name: 'applicationId', value: applicationId }]
                 },
                 {
                     tool_name: 'revoke_api_access',
-                    description: `Revogar este acesso recém-criado à API ${apiId}.`,
+                    description: `Revoke this newly granted access to API ${apiId}.`,
                     parameters: [
                         { name: 'applicationId', value: applicationId },
                         { name: 'apiId', value: apiId }
@@ -94,34 +94,34 @@ export async function grantApiAccess(api, applicationId, apiId) {
         };
     }
     catch (error) {
-        console.error(`Erro ao conceder acesso à API ${apiId} para a aplicação ${applicationId}:`, error);
+        console.error(`Error granting API access ${apiId} for application ${applicationId}:`, error);
         throw error;
     }
 }
 /**
- * Ferramenta para revogar o acesso de uma aplicação a uma API.
+ * Tool to revoke an application's access to an API.
  *
- * @param api Instância da classe AxwayApi.
- * @param applicationId O ID da aplicação da qual o acesso será revogado.
- * @param apiId O ID da API (proxy) da qual o acesso será removido.
- * @returns Um objeto de confirmação da operação.
+ * @param api AxwayApi class instance.
+ * @param applicationId The ID of the application from which access will be revoked.
+ * @param apiId The API (proxy) ID from which access will be removed.
+ * @returns A confirmation object for the operation.
  */
 export async function revokeApiAccess(api, applicationId, apiId) {
     try {
         await api.revokeApiAccess(applicationId, apiId);
         return {
-            message: `O acesso à API '${apiId}' para a aplicação '${applicationId}' foi revogado com sucesso.`,
+            message: `Access to API '${apiId}' for application '${applicationId}' was revoked successfully.`,
             relatedTools: [
                 {
                     tool_name: 'list_api_access',
-                    description: `Confirmar a alteração listando os acessos restantes para a aplicação ${applicationId}.`,
+                    description: `Confirm the change by listing remaining access grants for application ${applicationId}.`,
                     parameters: [{ name: 'applicationId', value: applicationId }]
                 }
             ]
         };
     }
     catch (error) {
-        console.error(`Erro ao revogar o acesso à API ${apiId} da aplicação ${applicationId}:`, error);
+        console.error(`Error revoking API access ${apiId} for application ${applicationId}:`, error);
         throw error;
     }
 }

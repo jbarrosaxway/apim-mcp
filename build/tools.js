@@ -1,6 +1,6 @@
 /**
- * DEFINIÇÃO DAS TOOLS MCP PARA AXWAY APIM
- * Naming: axway_apim_<resource>_<action> (segmento de produto provisório \`apim\`).
+ * MCP tool definitions for Axway APIM.
+ * Naming: axway_apim_<resource>_<action> (provisional product segment `apim`).
  */
 import { z } from "zod";
 const tool0 = {

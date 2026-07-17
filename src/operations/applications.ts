@@ -1,16 +1,16 @@
 /**
  * @module src/operations/applications
- * @description Este módulo contém as operações (ferramentas) para gerenciar Aplicações no Axway API Manager.
- * Inclui funcionalidades para listar e obter detalhes de aplicações, bem como gerenciar
- * suas credenciais, como API Keys e clientes OAuth.
+ * @description This module contains the operations (tools) for managing Applications in the Axway API Manager.
+ * Includes capabilities to list and get application details, as well as manage
+ * their credentials, such as API Keys and OAuth clients.
  */
 
 import { AxwayApi } from "../api.js";
 
 /**
- * Transforma o objeto de aplicação bruto da API em um formato mais limpo e consistente.
- * @param app O objeto de aplicação bruto.
- * @returns Um objeto de aplicação formatado.
+ * Transforms the raw API application object into a cleaner, more consistent format.
+ * @param app The raw application object.
+ * @returns A formatted application object.
  * @internal
  */
 function transformApplication(app: any) {
@@ -27,34 +27,34 @@ function transformApplication(app: any) {
 }
 
 /**
- * Transforma o objeto de API Key bruto da API em um formato mais limpo.
- * @param key O objeto de API Key bruto.
- * @returns Um objeto de API Key formatado.
+ * Transforms the raw API Key object into a cleaner format.
+ * @param key The raw API Key object.
+ * @returns A formatted API Key object.
  * @internal
  */
 function transformApiKey(key: any) {
   return {
     apiKeyId: key.id,
-    apiKey: key.apiKey, // ✅ USE ESTE CAMPO para autenticação em chamadas curl
-    secret: key.secret, // ⚠️ NÃO use este campo para autenticação
+    apiKey: key.apiKey, // Use this field for authentication in curl calls
+    secret: key.secret, // Do not use this field for authentication
     isEnabled: key.enabled,
     isCorsEnabled: key.cors,
     metadata: {
       createdAt: new Date(key.createdOn).toISOString(),
     },
-    // Informações importantes para uso correto
+    // Important usage information
     usageInfo: {
-      authenticationField: "apiKey", // Campo correto para usar em headers
+      authenticationField: "apiKey", // Correct field to use in headers
       curlExample: `curl -H "X-API-Key: ${key.apiKey}" https://your-api-endpoint`,
-      warning: "Use 'apiKey' para autenticação, NÃO use 'secret'"
+      warning: "Use 'apiKey' for authentication; do NOT use 'secret'"
     }
   };
 }
 
 /**
- * Transforma o objeto de credencial OAuth bruto da API em um formato mais limpo.
- * @param cred O objeto de credencial OAuth bruto.
- * @returns Um objeto de credencial OAuth formatado.
+ * Transforms the raw OAuth credential object into a cleaner format.
+ * @param cred The raw OAuth credential object.
+ * @returns A formatted OAuth credential object.
  * @internal
  */
 function transformOAuthCredential(cred: any) {
@@ -73,9 +73,9 @@ function transformOAuthCredential(cred: any) {
 }
 
 /**
- * Transforma o objeto de permissão bruto da API em um formato mais limpo.
- * @param perm O objeto de permissão bruto.
- * @returns Um objeto de permissão formatado.
+ * Transforms the raw permission object into a cleaner format.
+ * @param perm The raw permission object.
+ * @returns A formatted permission object.
  * @internal
  */
 function transformPermission(perm: any) {
@@ -88,9 +88,9 @@ function transformPermission(perm: any) {
 }
 
 /**
- * Ferramenta para listar todas as aplicações visíveis para o usuário autenticado.
- * @param api Instância da classe AxwayApi.
- * @returns Um objeto contendo a lista de aplicações formatadas.
+ * Tool to list all applications visible to the authenticated user.
+ * @param api AxwayApi class instance.
+ * @returns An object containing the list of formatted applications.
  */
 export async function listApplications(api: AxwayApi) {
   try {
@@ -103,27 +103,27 @@ export async function listApplications(api: AxwayApi) {
       relatedTools: [
         ...applications.map((app: any) => ({
           tool_name: 'get_application',
-          description: `Obter detalhes da aplicação '${app.name}'.`,
+          description: `Get details for application '${app.name}'.`,
           parameters: [{ name: 'id', value: app.applicationId }]
         })),
         {
           tool_name: 'list_organizations',
-          description: 'Listar organizações para entender a qual organização cada aplicação pertence.',
+          description: 'List organizations to see which organization each application belongs to.',
           parameters: []
         }
       ]
     };
   } catch (error) {
-    console.error(`Erro ao listar aplicações:`, error);
+    console.error(`Error listing applications:`, error);
     throw error;
   }
 }
 
 /**
- * Ferramenta para obter os detalhes de uma aplicação específica pelo seu ID.
- * @param api Instância da classe AxwayApi.
- * @param id O ID da aplicação a ser recuperada.
- * @returns Um objeto contendo os detalhes da aplicação.
+ * Tool to get details for a specific application by ID.
+ * @param api AxwayApi class instance.
+ * @param id The ID of the application to retrieve.
+ * @returns An object containing the application details.
  */
 export async function getApplication(api: AxwayApi, id: string) {
   try {
@@ -134,32 +134,32 @@ export async function getApplication(api: AxwayApi, id: string) {
       relatedTools: [
         {
           tool_name: 'get_api_keys_for_application',
-          description: `Gerenciar as API Keys da aplicação '${application.name}'.`,
+          description: `Manage API Keys for application '${application.name}'.`,
           parameters: [{ name: 'id', value: id }]
         },
         {
           tool_name: 'get_oauth_credentials_for_application',
-          description: `Gerenciar os clientes OAuth da aplicação '${application.name}'.`,
+          description: `Manage OAuth clients for application '${application.name}'.`,
           parameters: [{ name: 'id', value: id }]
         },
         {
           tool_name: 'list_api_access',
-          description: `Ver a quais APIs a aplicação '${application.name}' tem acesso.`,
+          description: `View which APIs application '${application.name}' has access to.`,
           parameters: [{ name: 'applicationId', value: id }]
         }
       ]
     };
   } catch (error) {
-    console.error(`Erro ao obter a aplicação ${id}:`, error);
+    console.error(`Error getting application ${id}:`, error);
     throw error;
   }
 }
 
 /**
- * Ferramenta para obter as API Keys associadas a uma aplicação específica.
- * @param api Instância da classe AxwayApi.
- * @param id O ID da aplicação.
- * @returns Um objeto contendo a lista de API Keys da aplicação.
+ * Tool to get the API Keys associated with a specific application.
+ * @param api AxwayApi class instance.
+ * @param id The application ID.
+ * @returns An object containing the application's API Key list.
  */
 export async function getApiKeysForApplication(api: AxwayApi, id: string) {
   try {
@@ -169,11 +169,11 @@ export async function getApiKeysForApplication(api: AxwayApi, id: string) {
       applicationId: id,
       count: apiKeys.length,
       apiKeys: apiKeys,
-      message: `A aplicação ${id} tem ${apiKeys.length} API Keys.`,
+      message: `Application ${id} has ${apiKeys.length} API Keys.`,
       relatedTools: [
         {
           tool_name: 'create_api_key',
-          description: `Criar uma nova API Key para a aplicação ${id}.`,
+          description: `Create a new API Key for application ${id}.`,
           parameters: [
             { name: 'appId', value: id },
             { name: 'enabled', value: 'true' }
@@ -182,44 +182,44 @@ export async function getApiKeysForApplication(api: AxwayApi, id: string) {
       ]
     };
   } catch (error) {
-    console.error(`Erro ao obter as API Keys para a aplicação ${id}:`, error);
+    console.error(`Error getting API Keys for application ${id}:`, error);
     throw error;
   }
 }
 
 /**
- * Ferramenta para criar uma nova API Key para uma aplicação específica.
- * @param api Instância da classe AxwayApi.
- * @param appId O ID da aplicação para a qual a chave será criada.
- * @param enabled (Opcional) Define se a chave deve ser criada como habilitada. Padrão: `true`.
- * @param secret (Opcional) Um segredo customizado para a API Key. Se não for fornecido, um será gerado.
- * @returns Um objeto contendo a nova API Key criada.
+ * Tool to create a new API Key for a specific application.
+ * @param api AxwayApi class instance.
+ * @param appId The ID of the application for which the key will be created.
+ * @param enabled (Optional) Whether the key should be created as enabled. Default: `true`.
+ * @param secret (Optional) A custom secret for the API Key. If not provided, one will be generated.
+ * @returns An object containing the newly created API Key.
  */
 export async function createApiKey(api: AxwayApi, appId: string, enabled: boolean = true, secret?: string) {
   try {
     const newKey = await api.createApiKey(appId, { enabled, secret });
     return {
-      message: "API Key criada com sucesso.",
+      message: "API Key created successfully.",
       apiKey: transformApiKey(newKey),
       relatedTools: [
         {
           tool_name: 'get_api_keys_for_application',
-          description: `Ver todas as API Keys para a aplicação ${appId}.`,
+          description: `View all API Keys for application ${appId}.`,
           parameters: [{ name: 'id', value: appId }]
         }
       ]
     };
   } catch (error) {
-    console.error(`Erro ao criar API Key para a aplicação ${appId}:`, error);
+    console.error(`Error creating API Key for application ${appId}:`, error);
     throw error;
   }
 }
 
 /**
- * Ferramenta para obter as credenciais OAuth (clientes) associadas a uma aplicação.
- * @param api Instância da classe AxwayApi.
- * @param id O ID da aplicação.
- * @returns Um objeto contendo a lista de credenciais OAuth da aplicação.
+ * Tool to get the OAuth credentials (clients) associated with an application.
+ * @param api AxwayApi class instance.
+ * @param id The application ID.
+ * @returns An object containing the application's OAuth credential list.
  */
 export async function getOAuthCredentialsForApplication(api: AxwayApi, id: string) {
   try {
@@ -229,55 +229,55 @@ export async function getOAuthCredentialsForApplication(api: AxwayApi, id: strin
       applicationId: id,
       count: oauthCredentials.length,
       oauthCredentials: oauthCredentials,
-      message: `A aplicação ${id} tem ${oauthCredentials.length} credenciais OAuth.`,
+      message: `Application ${id} has ${oauthCredentials.length} OAuth credentials.`,
       relatedTools: [
         {
           tool_name: 'create_oauth_credential',
-          description: `Criar uma nova credencial OAuth para a aplicação ${id}.`,
+          description: `Create a new OAuth credential for application ${id}.`,
           parameters: [{ name: 'appId', value: id }]
         }
       ]
     };
   } catch (error) {
-    console.error(`Erro ao obter as credenciais OAuth para a aplicação ${id}:`, error);
+    console.error(`Error getting OAuth credentials for application ${id}:`, error);
     throw error;
   }
 }
 
 /**
- * Ferramenta para criar uma nova credencial OAuth (cliente) para uma aplicação.
- * @param api Instância da classe AxwayApi.
- * @param appId O ID da aplicação para a qual a credencial será criada.
- * @param redirectURIs (Opcional) Uma lista de URIs de redirecionamento separadas por vírgula.
- * @param cert (Opcional) O certificado público (em formato PEM) a ser associado ao cliente.
- * @returns Um objeto contendo a nova credencial OAuth criada.
+ * Tool to create a new OAuth credential (client) for an application.
+ * @param api AxwayApi class instance.
+ * @param appId The ID of the application for which the credential will be created.
+ * @param redirectURIs (Optional) A comma-separated list of redirect URIs.
+ * @param cert (Optional) The public certificate (PEM format) to associate with the client.
+ * @returns An object containing the newly created OAuth credential.
  */
 export async function createOAuthCredential(api: AxwayApi, appId: string, redirectURIs?: string, cert?: string) {
   try {
     const newCred = await api.createOAuthCredential(appId, { redirectURIs, cert });
     return {
-      message: "Credencial OAuth criada com sucesso.",
+      message: "OAuth credential created successfully.",
       oauthCredential: transformOAuthCredential(newCred),
       relatedTools: [
         {
           tool_name: 'get_oauth_credentials_for_application',
-          description: `Ver todas as credenciais para a aplicação ${appId}.`,
+          description: `View all credentials for application ${appId}.`,
           parameters: [{ name: 'id', value: appId }]
         }
       ]
     };
   } catch (error) {
-    console.error(`Erro ao criar a credencial OAuth para a aplicação ${appId}:`, error);
+    console.error(`Error creating OAuth credential for application ${appId}:`, error);
     throw error;
   }
 }
 
 /**
- * Ferramenta para obter a lista de permissões (ACL) para uma aplicação específica.
- * Esta função é principalmente para depuração, pois `listApiAccess` é mais útil.
- * @param api Instância da classe AxwayApi.
- * @param id O ID da aplicação.
- * @returns Um objeto contendo a lista de permissões da aplicação.
+ * Tool to get the permission list (ACL) for a specific application.
+ * This function is mainly for debugging, since `listApiAccess` is generally more useful.
+ * @param api AxwayApi class instance.
+ * @param id The application ID.
+ * @returns An object containing the application's permission list.
  */
 export async function getPermissionsForApplication(api: AxwayApi, id:string) {
   try {
@@ -286,22 +286,22 @@ export async function getPermissionsForApplication(api: AxwayApi, id:string) {
     return {
       applicationId: id,
       permissions: permissions,
-      message: `Encontradas ${permissions.length} regras de permissão para a aplicação ${id}.`,
+      message: `Found ${permissions.length} permission rules for application ${id}.`,
       relatedTools: [
         {
           tool_name: 'list_api_access',
-          description: 'Obter detalhes completos sobre as APIs que esta aplicação pode acessar.',
+          description: 'Get full details about the APIs this application can access.',
           parameters: [{ name: 'applicationId', value: id }]
         },
         {
           tool_name: 'grant_api_access',
-          description: 'Gerenciar permissões concedendo acesso a uma API.',
+          description: 'Manage permissions by granting access to an API.',
           parameters: [{ name: 'applicationId', value: id }]
         }
       ]
     };
   } catch (error) {
-    console.error(`Erro ao obter as permissões para a aplicação ${id}:`, error);
+    console.error(`Error getting permissions for application ${id}:`, error);
     throw error;
   }
 }

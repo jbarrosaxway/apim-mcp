@@ -1,6 +1,6 @@
 /**
  * @module src/types
- * @description Define as interfaces e tipos de dados customizados usados em todo o projeto.
+ * @description Defines custom interfaces and data types used throughout the project.
  */
 export {};
 //# sourceMappingURL=types.js.map

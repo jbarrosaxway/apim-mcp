@@ -49,7 +49,7 @@ env:
 #     --from-literal=AXWAY_MANAGER_PASSWORD='...'
 secrets:
   name: "axway-mcp-credentials"
-  # true = chart cria o Secret a partir de stringData (só lab; evita em prod — fica no history do Helm)
+  # true = chart creates the Secret from stringData (lab only; avoid in prod — ends up in Helm history)
   create: false
   keys:
     gatewayUsername: AXWAY_GATEWAY_USERNAME

@@ -1154,8 +1154,8 @@ const toolConsts = tools
   .join("\n\n");
 
 const toolsTs = `/**
- * DEFINIÇÃO DAS TOOLS MCP PARA AXWAY APIM
- * Naming: axway_apim_<resource>_<action> (segmento de produto provisório \\\`apim\\\`).
+ * MCP TOOL DEFINITIONS FOR AXWAY APIM
+ * Naming: axway_apim_<resource>_<action> (provisional product segment \\\`apim\\\`).
  */
 
 import { z } from "zod";

@@ -1,14 +1,14 @@
 /**
  * @module src/operations/repository
- * @description Este módulo contém as operações (ferramentas) para gerenciar o
- * Repositório de APIs de Backend no Axway API Manager. As APIs de backend são as
- * definições (ex: Swagger/OpenAPI) dos seus serviços reais, que são então
-* expostas através de Proxies de API.
+ * @description This module contains the operations (tools) for managing the
+ * Backend API Repository in the Axway API Manager. Backend APIs are the
+ * definitions (e.g. Swagger/OpenAPI) of your real services, which are then
+* exposed through API Proxies.
  */
 /**
- * Transforma o objeto de API de backend bruto em um formato mais limpo e consistente.
+ * Transforms the raw backend API object into a cleaner, more consistent format.
  * @param api O objeto de API de backend bruto.
- * @returns Um objeto de API de backend formatado.
+ * @returns A formatted backend API object.
  * @internal
  */
 function transformBackendApi(api) {
@@ -24,10 +24,10 @@ function transformBackendApi(api) {
     };
 }
 /**
- * Ferramenta para listar todas as APIs de backend do repositório.
- * O `backendApiId` retornado aqui é usado como o `apiId` ao criar um proxy.
- * @param api Instância da classe AxwayApi.
- * @returns Um objeto contendo a lista de APIs de backend.
+ * Tool to list all backend APIs in the repository.
+ * The `backendApiId` returned here is used as `apiId` when creating a proxy.
+ * @param api AxwayApi class instance.
+ * @returns An object containing the list of backend APIs.
  */
 export async function listBackendApis(api) {
     try {
@@ -36,11 +36,11 @@ export async function listBackendApis(api) {
         return {
             count: backendApis.length,
             backendApis: backendApis,
-            message: `Encontradas ${backendApis.length} APIs de backend.`,
+            message: `Found ${backendApis.length} backend APIs.`,
             relatedTools: [
                 ...backendApis.map((bApi) => ({
                     tool_name: 'create_api_proxy',
-                    description: `Criar um proxy de API para expor a API de backend '${bApi.name}'.`,
+                    description: `Create an API proxy to expose backend API '${bApi.name}'.`,
                     parameters: [
                         { name: 'name', value: `${bApi.name} Proxy` },
                         { name: 'path', value: `/${bApi.name.toLowerCase().replace(/\s/g, '-')}` },
@@ -50,35 +50,35 @@ export async function listBackendApis(api) {
                 })),
                 {
                     tool_name: 'import_backend_api_from_url',
-                    description: 'Importar uma nova API de backend a partir de uma URL.',
+                    description: 'Import a new backend API from a URL.',
                     parameters: []
                 }
             ]
         };
     }
     catch (error) {
-        console.error(`Erro ao listar as APIs de backend:`, error);
+        console.error(`Error listing backend APIs:`, error);
         throw error;
     }
 }
 /**
- * Ferramenta para importar uma nova API de backend a partir de uma URL (ex: uma definição Swagger/OpenAPI).
- * @param api Instância da classe AxwayApi.
- * @param url A URL completa da definição da API a ser importada.
- * @param organizationId O ID da organização que será dona desta API de backend.
- * @param name (Opcional) Um nome customizado para a API. Se não fornecido, um será gerado a partir da definição.
- * @returns Um objeto de confirmação com os detalhes da API de backend importada.
+ * Tool to import a new backend API from a URL (e. g. a Swagger/OpenAPI definition).
+ * @param api AxwayApi class instance.
+ * @param url The full URL of the API definition to import.
+ * @param organizationId The ID of the organization that will own this backend API.
+ * @param name (Optional) A custom name for the API. If omitted, one is generated from the definition.
+ * @returns A confirmation object with the imported backend API details.
  */
 export async function importBackendApiFromUrl(api, url, organizationId, name) {
     try {
         const newApi = await api.importBackendApiFromUrl(url, organizationId, name);
         return {
-            message: `API de backend '${newApi.name}' importada com sucesso.`,
+            message: `Backend API '${newApi.name}' imported successfully.`,
             backendApi: transformBackendApi(newApi),
             relatedTools: [
                 {
                     tool_name: 'create_api_proxy',
-                    description: `Criar um proxy para expor a API '${newApi.name}' recém-importada.`,
+                    description: `Create a proxy to expose the newly imported API '${newApi.name}'.`,
                     parameters: [
                         { name: 'name', value: `${newApi.name} Proxy` },
                         { name: 'path', value: `/${newApi.name.toLowerCase().replace(/\s/g, '-')}` },
@@ -88,35 +88,35 @@ export async function importBackendApiFromUrl(api, url, organizationId, name) {
                 },
                 {
                     tool_name: 'list_backend_apis',
-                    description: 'Ver todas as APIs de backend disponíveis.',
+                    description: 'View all available backend APIs.',
                     parameters: []
                 }
             ]
         };
     }
     catch (error) {
-        console.error(`Erro ao importar a API de backend da URL ${url}:`, error);
+        console.error(`Error importing backend API from URL ${url}:`, error);
         throw error;
     }
 }
 /**
- * Ferramenta para importar uma nova API de backend a partir de um arquivo local.
- * @param api Instância da classe AxwayApi.
- * @param filePath O caminho local para o arquivo de definição da API (ex: 'swagger.json').
- * @param organizationId O ID da organização que será dona desta API de backend.
- * @param name (Opcional) Um nome customizado para a API.
- * @returns Um objeto de confirmação com os detalhes da API de backend importada.
+ * Tool to import a new backend API from a local file.
+ * @param api AxwayApi class instance.
+ * @param filePath Local path to the API definition file (e.g. 'swagger.json').
+ * @param organizationId The ID of the organization that will own this backend API.
+ * @param name (Optional) A custom name for the API.
+ * @returns A confirmation object with the imported backend API details.
  */
 export async function importBackendApiFromFile(api, filePath, organizationId, name) {
     try {
         const newApi = await api.importBackendApiFromFile(filePath, organizationId, name);
         return {
-            message: `API de backend do arquivo '${filePath}' importada com sucesso.`,
+            message: `Backend API from file '${filePath}' imported successfully.`,
             backendApi: transformBackendApi(newApi),
             relatedTools: [
                 {
                     tool_name: 'create_api_proxy',
-                    description: `Criar um proxy para expor a API '${newApi.name}' recém-importada.`,
+                    description: `Create a proxy to expose the newly imported API '${newApi.name}'.`,
                     parameters: [
                         { name: 'name', value: `${newApi.name} Proxy` },
                         { name: 'path', value: `/${newApi.name.toLowerCase().replace(/\s/g, '-')}` },
@@ -126,51 +126,51 @@ export async function importBackendApiFromFile(api, filePath, organizationId, na
                 },
                 {
                     tool_name: 'list_backend_apis',
-                    description: 'Ver todas as APIs de backend disponíveis.',
+                    description: 'View all available backend APIs.',
                     parameters: []
                 }
             ]
         };
     }
     catch (error) {
-        console.error(`Erro ao importar a API de backend do arquivo ${filePath}:`, error);
+        console.error(`Error importing backend API from file ${filePath}:`, error);
         throw error;
     }
 }
 /**
- * Ferramenta para deletar uma API de backend do repositório pelo seu ID.
- * @param api Instância da classe AxwayApi.
- * @param id O ID da API de backend a ser deletada.
- * @returns Um objeto de confirmação da exclusão.
+ * Tool to delete a backend API from the repository by ID.
+ * @param api AxwayApi class instance.
+ * @param id The ID of the backend API to delete.
+ * @returns A confirmation object for the deletion.
  */
 export async function deleteBackendApi(api, id) {
     try {
         await api.deleteBackendApi(id);
         return {
-            message: `A API de backend com ID '${id}' foi deletada com sucesso.`,
+            message: `Backend API with ID '${id}' was deleted successfully.`,
             relatedTools: [
                 {
                     tool_name: 'list_backend_apis',
-                    description: 'Listar as APIs de backend restantes para confirmar a exclusão.',
+                    description: 'List remaining backend APIs to confirm the deletion.',
                     parameters: []
                 }
             ]
         };
     }
     catch (error) {
-        console.error(`Erro ao deletar a API de backend ${id}:`, error);
+        console.error(`Error deleting backend API ${id}:`, error);
         throw error;
     }
 }
 /**
- * Tool MCP para upload de arquivo para importação de backend API.
+ * MCP tool for uploading a file for backend API import.
  * Recebe filename e content_base64, salva em /tmp e retorna o caminho salvo.
  */
 export async function uploadFileForImport(args) {
     if (!args.filePath) {
-        throw new Error('Parâmetro obrigatório: filePath');
+        throw new Error('Required parameter: filePath');
     }
-    // Apenas retorna o caminho informado, pois o arquivo já está no container
+    // Only returns the given path, since the file is already in the container
     return { filePath: args.filePath };
 }
 //# sourceMappingURL=repository.js.map

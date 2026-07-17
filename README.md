@@ -1,33 +1,37 @@
 # Axway APIM MCP
 
-**Versão:** `1.0.17-axway-std`
+Languages: [English](README.md) | [Português (Brasil)](README.pt-BR.md)
 
-Servidor [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) em **Node.js / TypeScript** para administrar e monitorizar ambientes **Axway API Gateway (ANM)** e **API Manager** a partir de clientes como o **Cursor**.
+**Version:** `1.0.17-axway-std`
 
-| Guia | Conteúdo |
-|------|----------|
-| **[docs/guia-fim-a-fim.md](docs/guia-fim-a-fim.md)** | Instalar, configurar Axway + OIDC e autenticar no Cursor |
-| **[docs/oidc-idps.md](docs/oidc-idps.md)** | Ligar Keycloak, Entra ID, Okta, Auth0 (ou outro OIDC) |
-| **[helm/axway-mcp/](helm/axway-mcp/)** | Chart Kubernetes (Secret obrigatório para users/senhas Axway) |
+[MCP (Model Context Protocol)](https://modelcontextprotocol.io/) server in **Node.js / TypeScript** to administer and monitor **Axway API Gateway (ANM)** and **API Manager** environments from clients such as **Cursor**.
 
----
+| Guide | Content |
+|-------|---------|
+| **[docs/en/end-to-end-guide.md](docs/en/end-to-end-guide.md)** | Install, configure Axway + OIDC, and authenticate in Cursor |
+| **[docs/en/oidc-idps.md](docs/en/oidc-idps.md)** | Connect Keycloak, Entra ID, Okta, Auth0 (or another OIDC IdP) |
+| **[helm/axway-mcp/](helm/axway-mcp/)** | Kubernetes chart (Secret required for Axway users/passwords) |
 
-## O que há de novo (1.0.17-axway-std)
-
-- **Naming Axway MCP:** tools `axway_apim_<resource>_<action>` e prompt `axway_apim_gateway_diagnose` (segmento `apim` provisório — ver [docs/cpo-apim-product-request.md](docs/cpo-apim-product-request.md))
-- **Annotations MCP** (`readOnlyHint` / `destructiveHint` / `idempotentHint` / `openWorldHint`) em todas as tools
-- **Resources** mínimos `axway://apim/...`
-- Descriptions/params alinhados ao style guide (side effects, retry, siblings)
-- OAuth 2.1 Resource Server + scopes hierárquicos (`mcp:observe` ⊂ `mcp:operator` ⊂ `mcp:admin`)
-- Auditoria: skill em `vendor/axway-mcp-auditor/` (local; ignorado pelo git) + `scripts/export-mcp-manifest.mjs`
+Full docs index: [docs/README.md](docs/README.md).
 
 ---
 
-## Arquitectura (duas autenticações)
+## What's new (1.0.17-axway-std)
+
+- **Axway MCP naming:** tools `axway_apim_<resource>_<action>` and prompt `axway_apim_gateway_diagnose` (provisional `apim` segment — see [docs/en/cpo-apim-product-request.md](docs/en/cpo-apim-product-request.md))
+- **MCP annotations** (`readOnlyHint` / `destructiveHint` / `idempotentHint` / `openWorldHint`) on all tools
+- Minimal **resources** `axway://apim/...`
+- Descriptions/params aligned to the style guide (side effects, retry, siblings)
+- OAuth 2.1 Resource Server + hierarchical scopes (`mcp:observe` ⊂ `mcp:operator` ⊂ `mcp:admin`)
+- Audit: skill in `vendor/axway-mcp-auditor/` (local; gitignored) + `scripts/export-mcp-manifest.mjs`
+
+---
+
+## Architecture (two authentication planes)
 
 ```text
-  Cursor / cliente MCP
-        │  OIDC Bearer JWT     (quem pode usar o MCP — só em HTTP)
+  Cursor / MCP client
+        │  OIDC Bearer JWT     (who may use the MCP — HTTP only)
         ▼
   axway-mcp 1.0.17
         │  Basic Auth AXWAY_*  (MCP → Gateway + Manager)
@@ -35,35 +39,37 @@ Servidor [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) em **N
   API Gateway / ANM   +   API Manager
 ```
 
-| Plano | Variáveis | Notas |
-|-------|-----------|--------|
-| Cliente → MCP | `MCP_AUTH_MODE`, `OIDC_*`, `MCP_RESOURCE_URL` | Em `stdio`: `MCP_TOOL_PROFILE` |
-| MCP → Axway | `AXWAY_GATEWAY_*`, `AXWAY_MANAGER_*`, TLS | Em K8s: users/senhas no Secret |
+| Plane | Variables | Notes |
+|-------|-----------|-------|
+| Client → MCP | `MCP_AUTH_MODE`, `OIDC_*`, `MCP_RESOURCE_URL` | In `stdio`: `MCP_TOOL_PROFILE` |
+| MCP → Axway | `AXWAY_GATEWAY_*`, `AXWAY_MANAGER_*`, TLS | In K8s: users/passwords in the Secret |
 
 ---
 
-## Auditoria Axway MCP (style guide)
+## Axway MCP audit (style guide)
 
-O auditor vive em `vendor/axway-mcp-auditor/` (não versionado; extrair o ZIP da skill Axway para essa pasta).
+The auditor lives in `vendor/axway-mcp-auditor/` (not versioned; extract the Axway skill ZIP into that folder).
 
 ```bash
-# 1) Exportar manifest do servidor HTTP (admin token para ver todas as tools)
+# 1) Export manifest from the HTTP server (admin token to see all tools)
 mkdir -p tmp
 node scripts/export-mcp-manifest.mjs http://127.0.0.1:3000 "$MCP_BEARER_TOKEN"
 
-# 2) Normalizar + auditar + score (Python 3)
+# 2) Normalize + audit + score (Python 3)
 python vendor/axway-mcp-auditor/scripts/normalize_manifest.py tmp/mcp_manifest.json -o tmp/mcp_manifest.normalized.json
 python vendor/axway-mcp-auditor/scripts/audit_manifest.py tmp/mcp_manifest.normalized.json -o tmp/audit_report.json
 python vendor/axway-mcp-auditor/scripts/scoring.py tmp/audit_report.json
 ```
 
-Meta GA-ready: score ≥ 70, **0 Critical**, ≤ 3 High. Finding **A10** (`apim` ainda não está na lista canónica `{fusion,st,cft,b2bi,workbench,engage}`) fica documentado até a CPO aprovar o segmento.
+GA-ready target: score ≥ 70, **0 Critical**, ≤ 3 High. Finding **A10** (`apim` is not yet on the canonical list `{fusion,st,cft,b2bi,workbench,engage}`) remains documented until CPO approves the segment.
 
-Alternativa: `python vendor/axway-mcp-auditor/scripts/fetch_manifest.py <url> --header "Authorization: Bearer …"`.
+Alternative: `python vendor/axway-mcp-auditor/scripts/fetch_manifest.py <url> --header "Authorization: Bearer …"`.
+
+Latest audit summary: [docs/en/axway-mcp-audit-1.0.17.md](docs/en/axway-mcp-audit-1.0.17.md).
 
 ---
 
-## Arranque rápido
+## Quick start
 
 ### Local (stdio)
 
@@ -71,7 +77,7 @@ Alternativa: `python vendor/axway-mcp-auditor/scripts/fetch_manifest.py <url> --
 npm ci && npm run build
 ```
 
-Exemplo em [`.cursor/mcp.json`](.cursor/mcp.json) — preencher URLs/credenciais Axway (placeholders `replace-me`). Sem OIDC.
+Example in [`.cursor/mcp.json`](.cursor/mcp.json) — fill in Axway URLs/credentials (`replace-me` placeholders). No OIDC.
 
 ### Docker (HTTP + OIDC)
 
@@ -120,43 +126,43 @@ helm upgrade --install axway-mcp ./helm/axway-mcp -n apim-mcp \
   --set env.AXWAY_TLS_REJECT_UNAUTHORIZED=false
 ```
 
-Passos completos (OIDC no IdP, Cursor, smoke tests): **[docs/guia-fim-a-fim.md](docs/guia-fim-a-fim.md)**.
+Full steps (OIDC in the IdP, Cursor, smoke tests): **[docs/en/end-to-end-guide.md](docs/en/end-to-end-guide.md)**.
 
 ---
 
-## Variáveis de ambiente
+## Environment variables
 
 ### Axway
 
-| Variável | Obrigatório | Descrição |
-|----------|-------------|-----------|
-| `AXWAY_GATEWAY_URL` | Sim | Base da API do Gateway (`…/api`) |
-| `AXWAY_GATEWAY_USERNAME` / `PASSWORD` | Sim | Em Helm: chaves do Secret |
-| `AXWAY_MANAGER_URL` | Sim | Base do Portal (`…/api/portal/v1.4`) |
-| `AXWAY_MANAGER_USERNAME` / `PASSWORD` | Sim | Em Helm: chaves do Secret |
-| `AXWAY_TLS_REJECT_UNAUTHORIZED` | Não | Default `false` (cert autoassinado) |
-| `AXWAY_TLS_INSECURE` | Não | `true` ⇒ TLS verify off |
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `AXWAY_GATEWAY_URL` | Yes | Gateway API base (`…/api`) |
+| `AXWAY_GATEWAY_USERNAME` / `PASSWORD` | Yes | In Helm: Secret keys |
+| `AXWAY_MANAGER_URL` | Yes | Portal base (`…/api/portal/v1.4`) |
+| `AXWAY_MANAGER_USERNAME` / `PASSWORD` | Yes | In Helm: Secret keys |
+| `AXWAY_TLS_REJECT_UNAUTHORIZED` | No | Default `false` (self-signed cert) |
+| `AXWAY_TLS_INSECURE` | No | `true` ⇒ TLS verify off |
 
 ### Runtime / auth
 
-| Variável | Obrigatório | Descrição |
-|----------|-------------|-----------|
-| `TRANSPORT_MODE` | Não | `http` (default) ou `stdio` |
-| `PORT` | Não | Default `3000` |
-| `TZ` | Não | Ex.: `America/Sao_Paulo` |
-| `MCP_AUTH_MODE` | Não | `none` ou `oidc` (HTTP) |
-| `OIDC_ISSUER` | Se oidc | Issuer OIDC (sem `/` final) |
-| `OIDC_AUDIENCE` | Se oidc | Claim `aud` do JWT |
-| `MCP_RESOURCE_URL` | Se oidc | URL canónica do MCP (RFC 9728) |
-| `MCP_REQUIRED_SCOPES` | Não | Gate de entrada; default OIDC `mcp:observe` (hierárquico) |
-| `OIDC_JWKS_URI` | Não | Override do JWKS (senão discovery) |
-| `MCP_TOOL_PROFILE` | Não | Só `stdio`: `observe` \| `operator` \| `admin` (default `admin`) |
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `TRANSPORT_MODE` | No | `http` (default) or `stdio` |
+| `PORT` | No | Default `3000` |
+| `TZ` | No | e.g. `America/Sao_Paulo` |
+| `MCP_AUTH_MODE` | No | `none` or `oidc` (HTTP) |
+| `OIDC_ISSUER` | If oidc | OIDC issuer (no trailing `/`) |
+| `OIDC_AUDIENCE` | If oidc | JWT `aud` claim |
+| `MCP_RESOURCE_URL` | If oidc | Canonical MCP URL (RFC 9728) |
+| `MCP_REQUIRED_SCOPES` | No | Entry gate; OIDC default `mcp:observe` (hierarchical) |
+| `OIDC_JWKS_URI` | No | JWKS override (otherwise discovery) |
+| `MCP_TOOL_PROFILE` | No | `stdio` only: `observe` \| `operator` \| `admin` (default `admin`) |
 
 ---
 
-## Cursor (cliente MCP)
+## Cursor (MCP client)
 
-**Remoto (OIDC):**
+**Remote (OIDC):**
 
 ```json
 {
@@ -172,63 +178,63 @@ Passos completos (OIDC no IdP, Cursor, smoke tests): **[docs/guia-fim-a-fim.md](
 }
 ```
 
-Não é preciso pedir `mcp:*` no Cursor: o Keycloak inclui o scope MCP conforme a **role** do user (`mcp-observe` / `mcp-operator` / `mcp-admin`).
+You do not need to request `mcp:*` in Cursor: Keycloak includes the MCP scope according to the user **role** (`mcp-observe` / `mcp-operator` / `mcp-admin`).
 
-Settings → Tools & MCP → **Connect** → login no IdP.
+Settings → Tools & MCP → **Connect** → log in to the IdP.
 
-**Local (stdio):** ver [`.cursor/mcp.json`](.cursor/mcp.json). Opcional: `MCP_TOOL_PROFILE=observe` no `env` do servidor.
-
----
-
-## Scopes por perfil (autorização de tools)
-
-Hierarquia: **`mcp:admin` ⊃ `mcp:operator` ⊃ `mcp:observe`**. Alias legado: **`mcp:tools` = `mcp:admin`**.
-
-| Scope | Axway análogo | Pode |
-|-------|---------------|------|
-| `mcp:observe` | API Server Operator + leitura APIM | Topologia, tráfego/logs, list/get (sem secrets) |
-| `mcp:operator` | Operação | + lifecycle de proxy (`lifecycle` em `axway_apim_proxy_update`), cotas, alertas |
-| `mcp:admin` | Admin | + CRUD, import backend, API keys/OAuth |
-
-Matriz completa tool × perfil: [`src/auth/tool-scopes.ts`](src/auth/tool-scopes.ts) e [docs/guia-fim-a-fim.md](docs/guia-fim-a-fim.md).
+**Local (stdio):** see [`.cursor/mcp.json`](.cursor/mcp.json). Optional: `MCP_TOOL_PROFILE=observe` in the server `env`.
 
 ---
 
-## Capacidades (tools)
+## Scopes by profile (tool authorization)
 
-O servidor expoe dezenas de tools em `src/tools.ts` / `src/operations/`, entre outras:
+Hierarchy: **`mcp:admin` ⊃ `mcp:operator` ⊃ `mcp:observe`**. Legacy alias: **`mcp:tools` = `mcp:admin`**.
 
-| Área | Exemplos |
+| Scope | Axway analogue | Can |
+|-------|----------------|-----|
+| `mcp:observe` | API Server Operator + APIM read | Topology, traffic/logs, list/get (no secrets) |
+| `mcp:operator` | Operations | + proxy lifecycle (`lifecycle` on `axway_apim_proxy_update`), quotas, alerts |
+| `mcp:admin` | Admin | + CRUD, backend import, API keys/OAuth |
+
+Full tool × profile matrix: [`src/auth/tool-scopes.ts`](src/auth/tool-scopes.ts) and [docs/en/end-to-end-guide.md](docs/en/end-to-end-guide.md).
+
+---
+
+## Capabilities (tools)
+
+The server exposes dozens of tools in `src/tools.ts` / `src/operations/`, including:
+
+| Area | Examples |
 |------|----------|
-| Topologia / sistema | `axway_apim_topology_list`, `axway_apim_time_get`, `axway_apim_config_get` |
-| Monitorização | `axway_apim_traffic_search`, `axway_apim_trafficevent_get`, `axway_apim_instancetraffic_get` |
-| Organizações / users | `axway_apim_organization_*`, `axway_apim_user_*` |
-| Aplicações / credenciais | `axway_apim_apikey_*`, `axway_apim_oauth_*` |
-| Proxies / catálogo | `axway_apim_proxy_*` (lifecycle via `lifecycle`), `axway_apim_catalog_get` |
-| Backend / acesso | `axway_apim_backend_submit`, `axway_apim_access_update` / `_delete` |
-| Alertas / cotas | `axway_apim_alert_*`, `axway_apim_quota_*` |
+| Topology / system | `axway_apim_topology_list`, `axway_apim_time_get`, `axway_apim_config_get` |
+| Monitoring | `axway_apim_traffic_search`, `axway_apim_trafficevent_get`, `axway_apim_instancetraffic_get` |
+| Organizations / users | `axway_apim_organization_*`, `axway_apim_user_*` |
+| Applications / credentials | `axway_apim_apikey_*`, `axway_apim_oauth_*` |
+| Proxies / catalog | `axway_apim_proxy_*` (lifecycle via `lifecycle`), `axway_apim_catalog_get` |
+| Backend / access | `axway_apim_backend_submit`, `axway_apim_access_update` / `_delete` |
+| Alerts / quotas | `axway_apim_alert_*`, `axway_apim_quota_*` |
 | Prompt | `axway_apim_gateway_diagnose`
 
-O LLM obtém IDs com listagens e encadeia tools específicas (`correlationId`, `instanceId`, etc.).
+The LLM obtains IDs from list calls and chains specific tools (`correlationId`, `instanceId`, etc.).
 
 ---
 
-## Layout do código
+## Code layout
 
-| Path | Função |
-|------|--------|
-| `src/index.ts` | Entrada MCP (HTTP sessões + stdio) + gate OIDC + authz por tool |
+| Path | Role |
+|------|------|
+| `src/index.ts` | MCP entry (HTTP sessions + stdio) + OIDC gate + per-tool authz |
 | `src/auth/oidc.ts` | Resource Server (PRM, JWT/JWKS) |
-| `src/auth/tool-scopes.ts` | Matriz tool → perfil (observe/operator/admin) |
+| `src/auth/tool-scopes.ts` | Tool → profile matrix (observe/operator/admin) |
 | `src/auth/context.ts` | AsyncLocalStorage / `MCP_TOOL_PROFILE` (stdio) |
-| `src/api.ts` | Cliente Axway (Gateway + Manager) |
-| `src/tools.ts` | Schemas Zod das tools |
-| `src/operations/*` | Implementações por domínio |
-| `helm/axway-mcp/` | Deploy K8s |
-| `scripts/setup-keycloak-apim-mcp.ps1` | Provisionamento Keycloak (exemplo) |
+| `src/api.ts` | Axway client (Gateway + Manager) |
+| `src/tools.ts` | Zod tool schemas |
+| `src/operations/*` | Domain implementations |
+| `helm/axway-mcp/` | K8s deploy |
+| `scripts/setup-keycloak-apim-mcp.ps1` | Keycloak provisioning (example) |
 
 ---
 
-## Licença
+## License
 
-ISC — ver `package.json`.
+ISC — see `package.json`.

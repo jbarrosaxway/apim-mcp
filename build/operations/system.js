@@ -1,46 +1,46 @@
 /**
  * @module src/operations/system
- * @description Este módulo contém operações (ferramentas) que fornecem informações
- * sobre o próprio sistema MCP, em vez de interagir com o ambiente Axway.
+ * @description This module contains operations (tools) that provide information
+ * about the MCP system itself, rather than interacting with the Axway environment.
  */
 import { AxwayApi } from '../api.js';
 /**
- * Ferramenta para obter o timestamp e o fuso horário atuais do servidor onde o MCP está sendo executado.
- * Útil para verificar a sanidade do sistema e para obter uma referência de tempo confiável.
+ * Tool to get the current timestamp and timezone of the server where MCP is running.
+ * Useful for sanity-checking the system and obtaining a reliable time reference.
  *
- * @returns Um objeto contendo a data e hora em diferentes formatos e o fuso horário IANA.
+ * @returns An object containing date/time in different formats and the IANA timezone.
  */
 export async function getMcpServerTime() {
     const now = new Date();
-    // Intl.DateTimeFormat é usado para obter o nome do fuso horário IANA (ex: 'America/Sao_Paulo').
+    // Intl.DateTimeFormat is used to get the IANA timezone name (e.g. 'America/Sao_Paulo').
     const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
     return {
         iso_utc: now.toISOString(),
         human_readable_local: now.toLocaleString(),
         timezone: timeZone,
-        note: "Esta é a hora atual do servidor onde o MCP (Model-Context-Protocol) está em execução."
+        note: "This is the current time of the server where the MCP (Model Context Protocol) is running."
     };
 }
 /**
- * Obtém a configuração do API Manager.
- * Esta ferramenta acessa o endpoint `/config` do API Manager para recuperar
- * informações sobre a configuração do sistema, incluindo políticas globais,
- * configurações de segurança, limites de sessão, etc.
+ * Gets the API Manager configuration.
+ * This tool calls the API Manager `/config` endpoint to retrieve
+ * system configuration information, including global policies,
+ * security settings, session limits, etc.
  *
- * @returns Promise<any> - A configuração completa do API Manager
+ * @returns Promise<any> - The full API Manager configuration
  */
 export async function getManagerConfig() {
     const api = new AxwayApi();
     const config = await api.getManagerConfig();
     return {
-        message: "Configuração do API Manager recuperada com sucesso",
+        message: "API Manager configuration retrieved successfully",
         configuration: config,
         curlExample: `curl '${process.env.AXWAY_MANAGER_URL}/config?request.preventCache=${Date.now()}' \\
   --compressed \\
   -H 'Accept: application/json' \\
   -H 'X-Requested-With: XMLHttpRequest' \\
   -H 'Authorization: Basic ${Buffer.from(`${process.env.AXWAY_MANAGER_USERNAME}:${process.env.AXWAY_MANAGER_PASSWORD}`).toString('base64')}'`,
-        note: "Esta configuração inclui políticas globais, configurações de segurança, limites de sessão e outras configurações do sistema."
+        note: "This configuration includes global policies, security settings, session limits, and other system settings."
     };
 }
 //# sourceMappingURL=system.js.map

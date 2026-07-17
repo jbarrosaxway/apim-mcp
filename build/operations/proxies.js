@@ -1,26 +1,26 @@
 /**
  * @module src/operations/proxies
- * @description Este módulo contém as operações (ferramentas) para o gerenciamento
+ * @description This module contains the operations (tools) for managing
  * completo do ciclo de vida de Proxies de API (APIs de Frontend) no Axway API Manager.
  */
 import { removeEmptyValues } from "../utils.js";
 /**
- * Transforma o objeto de proxy de API detalhado em uma versão simplificada,
- * focada em informações chave para diagnóstico e solução de problemas (troubleshooting).
- * @param rawProxy O objeto de proxy de API bruto retornado pela API.
- * @returns Um objeto simplificado com informações de inbound, outbound e estado.
+ * Transforms the detailed API proxy object into a simplified version,
+ * focused on key information for diagnosis and troubleshooting.
+ * @param rawProxy The raw API proxy object returned by the API.
+ * @returns A simplified object with inbound, outbound, and state information.
  * @internal
  */
 function transformApiProxyForTroubleshooting(rawProxy) {
     const securityProfile = rawProxy.securityProfiles?.find((p) => p.isDefault);
     const authProfile = rawProxy.authenticationProfiles?.find((p) => p.isDefault);
     const corsProfile = rawProxy.corsProfiles?.find((p) => p.isDefault);
-    // Extrair informações de autenticação das configurações de segurança
+    // Extract authentication information from security settings
     const authDevices = securityProfile?.devices || [];
     const apiKeyDevice = authDevices.find((d) => d.type === 'apiKey');
     const oauthDevice = authDevices.find((d) => d.type === 'oauth');
-    // Determinar o nome do campo de autenticação baseado nas configurações
-    let authFieldName = "X-API-Key"; // Padrão
+    // Determine the authentication field name based on settings
+    let authFieldName = "X-API-Key"; // Default
     if (apiKeyDevice?.properties?.headerName) {
         authFieldName = apiKeyDevice.properties.headerName;
     }
@@ -41,14 +41,14 @@ function transformApiProxyForTroubleshooting(rawProxy) {
             fieldName: authFieldName, // ✅ NOME DO CAMPO para usar em headers
             authType: apiKeyDevice ? 'apiKey' : oauthDevice ? 'oauth' : 'none',
             curlExample: `curl -H "${authFieldName}: YOUR_API_KEY" https://your-api-endpoint`,
-            warning: "Consulte as configurações de segurança do proxy para o nome correto do campo"
+            warning: "Check the proxy security settings for the correct field name"
         },
         troubleshootingInfo: {
             inbound: {
                 security: securityProfile?.devices?.map((d) => ({
                     type: d.type,
                     scopes: d.properties?.scopes,
-                    headerName: d.properties?.headerName // Nome do campo de autenticação
+                    headerName: d.properties?.headerName // Authentication field name
                 })),
                 cors: {
                     origins: corsProfile?.origins
@@ -68,14 +68,14 @@ function transformApiProxyForTroubleshooting(rawProxy) {
     return removeEmptyValues(simplified);
 }
 /**
- * Ferramenta para listar todos os proxies de API (APIs de Frontend).
- * @param api Instância da classe AxwayApi.
- * @returns Um objeto contendo a lista de proxies de API.
+ * Tool to list all API proxies (Frontend APIs).
+ * @param api AxwayApi class instance.
+ * @returns An object containing the list of API proxies.
  */
 export async function listApiProxies(api) {
     try {
         const rawProxies = await api.listApiProxies();
-        // Retorna uma versão simplificada na lista para economizar tokens
+        // Return a simplified version in the list to save tokens
         const proxies = rawProxies.map((p) => ({
             id: p.id,
             name: p.name,
@@ -87,28 +87,28 @@ export async function listApiProxies(api) {
         return {
             count: proxies.length,
             apiProxies: proxies,
-            message: `Encontrados ${proxies.length} proxies de API.`,
+            message: `Found ${proxies.length} API proxies.`,
             relatedTools: [
                 ...proxies.map((p) => ({
                     tool_name: 'axway_apim_proxy_get',
-                    description: `Obter detalhes de troubleshooting para o proxy '${p.name}'.`,
+                    description: `Get troubleshooting details for proxy '${p.name}'.`,
                     parameters: [{ name: 'id', value: p.id }]
                 })),
                 {
                     tool_name: 'axway_apim_backend_list',
-                    description: 'Listar APIs de backend, necessário para criar um novo proxy.',
+                    description: 'List backend APIs, required to create a new proxy.',
                     parameters: []
                 }
             ]
         };
     }
     catch (error) {
-        console.error(`Erro ao listar proxies de API:`, error);
+        console.error(`Error listing API proxies:`, error);
         throw error;
     }
 }
 /**
- * Catálogo consumer-facing: apenas proxies em estado published.
+ * Consumer-facing catalog: published proxies only.
  */
 export async function getApiCatalog(api) {
     const all = await listApiProxies(api);
@@ -116,7 +116,7 @@ export async function getApiCatalog(api) {
     return {
         count: published.length,
         catalog: published,
-        message: `Catálogo: ${published.length} API(s) published (use axway_apim_proxy_list for all lifecycle states).`,
+        message: `Catalog: ${published.length} API(s) published (use axway_apim_proxy_list for all lifecycle states).`,
         relatedTools: [
             {
                 tool_name: "axway_apim_proxy_list",
@@ -127,21 +127,21 @@ export async function getApiCatalog(api) {
     };
 }
 /**
- * Ferramenta para obter informações específicas de autenticação de um proxy de API.
- * @param api Instância da classe AxwayApi.
- * @param id O ID do proxy de API.
- * @returns Um objeto contendo informações de autenticação do proxy.
+ * Tool to get authentication-specific information for an API proxy.
+ * @param api AxwayApi class instance.
+ * @param id The API proxy ID.
+ * @returns An object containing the proxy authentication information.
  */
 export async function getProxyAuthenticationInfo(api, id) {
     try {
         const rawProxy = await api.getApiProxy(id);
         const securityProfile = rawProxy.securityProfiles?.find((p) => p.isDefault);
         const authDevices = securityProfile?.devices || [];
-        // Extrair informações de autenticação
+        // Extract authentication information
         const apiKeyDevice = authDevices.find((d) => d.type === 'apiKey');
         const oauthDevice = authDevices.find((d) => d.type === 'oauth');
-        // Determinar o nome do campo de autenticação
-        let authFieldName = "X-API-Key"; // Padrão
+        // Determine the authentication field name
+        let authFieldName = "X-API-Key"; // Default
         let authType = "none";
         if (apiKeyDevice?.properties?.headerName) {
             authFieldName = apiKeyDevice.properties.headerName;
@@ -160,38 +160,38 @@ export async function getProxyAuthenticationInfo(api, id) {
                 fieldName: authFieldName,
                 curlExample: `curl -H "${authFieldName}: YOUR_API_KEY" https://your-api-endpoint`,
                 curlWithApiKey: `curl -H "${authFieldName}: YOUR_API_KEY" ${rawProxy.vhost}${rawProxy.path}`,
-                warning: "Use o campo 'apiKey' das credenciais, NÃO use o campo 'secret'",
+                warning: "Use the 'apiKey' field from credentials; do NOT use the 'secret' field",
                 securityDevices: authDevices.map((d) => ({
                     type: d.type,
                     headerName: d.properties?.headerName,
                     scopes: d.properties?.scopes
                 }))
             },
-            message: `Informações de autenticação para o proxy '${rawProxy.name}'. Use o header '${authFieldName}' para autenticação.`,
+            message: `Authentication information for proxy '${rawProxy.name}'. Use the '${authFieldName}' header for authentication.`,
             relatedTools: [
                 {
                     tool_name: 'get_api_keys_for_application',
-                    description: 'Obter API Keys para usar com este proxy.',
+                    description: 'Get API Keys to use with this proxy.',
                     parameters: []
                 },
                 {
                     tool_name: 'get_api_proxy',
-                    description: `Obter detalhes completos do proxy '${rawProxy.name}'.`,
+                    description: `Get full details for proxy '${rawProxy.name}'.`,
                     parameters: [{ name: 'id', value: id }]
                 }
             ]
         };
     }
     catch (error) {
-        console.error(`Erro ao obter informações de autenticação do proxy ${id}:`, error);
+        console.error(`Error getting authentication info for proxy ${id}:`, error);
         throw error;
     }
 }
 /**
- * Ferramenta para obter detalhes de um proxy de API específico, formatado para troubleshooting.
- * @param api Instância da classe AxwayApi.
- * @param id O ID do proxy de API a ser recuperado.
- * @returns Um objeto contendo os detalhes simplificados do proxy.
+ * Tool to get details for a specific API proxy, formatted for troubleshooting.
+ * @param api AxwayApi class instance.
+ * @param id The ID of the API proxy to retrieve.
+ * @returns An object containing the simplified proxy details.
  */
 export async function getApiProxy(api, id) {
     try {
@@ -202,209 +202,209 @@ export async function getApiProxy(api, id) {
             relatedTools: [
                 {
                     tool_name: 'update_api_proxy',
-                    description: `Atualizar o proxy '${apiProxy.name}'.`,
+                    description: `Update proxy '${apiProxy.name}'.`,
                     parameters: [{ name: 'id', value: id }]
                 },
                 {
                     tool_name: 'list_api_access',
-                    description: `Ver quais aplicações têm acesso a este proxy.`,
-                    parameters: [{ name: 'applicationId', value: 'ALL' }] // O usuário precisará substituir
+                    description: `View which applications have access to this proxy.`,
+                    parameters: [{ name: 'applicationId', value: 'ALL' }] // The user will need to replace this
                 },
                 {
                     tool_name: 'publish_api',
-                    description: `Publicar o proxy '${apiProxy.name}' para torná-lo ativo.`,
+                    description: `Publish proxy '${apiProxy.name}' to make it active.`,
                     parameters: [{ name: 'id', value: id }]
                 },
                 {
                     tool_name: 'delete_api_proxy',
-                    description: `Deletar o proxy '${apiProxy.name}'.`,
+                    description: `Delete proxy '${apiProxy.name}'.`,
                     parameters: [{ name: 'id', value: id }]
                 }
             ]
         };
     }
     catch (error) {
-        console.error(`Erro ao obter o proxy de API ${id}:`, error);
+        console.error(`Error getting API proxy ${id}:`, error);
         throw error;
     }
 }
 /**
- * Ferramenta para criar um novo proxy de API (API de Frontend).
- * @param api Instância da classe AxwayApi.
- * @param name O nome do novo proxy.
- * @param path O caminho de exposição do proxy (ex: '/my-api/v1').
- * @param apiId O ID da API de Backend a ser exposta por este proxy.
- * @param organizationId O ID da organização que será dona do proxy.
- * @returns Um objeto de confirmação com os detalhes do proxy criado.
+ * Tool to create a new API proxy (Frontend API).
+ * @param api AxwayApi class instance.
+ * @param name The name of the new proxy.
+ * @param path The proxy exposure path (e.g. '/my-api/v1').
+ * @param apiId The backend API ID to be exposed by this proxy.
+ * @param organizationId The ID of the organization that will own the proxy.
+ * @returns A confirmation object with the created proxy details.
  */
 export async function createApiProxy(api, name, path, apiId, organizationId) {
     try {
         const newProxy = await api.createApiProxy({ name, path, apiId, organizationId });
         return {
-            message: `Proxy de API '${newProxy.name}' criado com sucesso.`,
+            message: `API proxy '${newProxy.name}' created successfully.`,
             apiProxy: newProxy,
             relatedTools: [
                 {
                     tool_name: 'get_api_proxy',
-                    description: 'Ver os detalhes do proxy recém-criado.',
+                    description: 'View details of the newly created proxy.',
                     parameters: [{ name: 'id', value: newProxy.id }]
                 },
                 {
                     tool_name: 'publish_api',
-                    description: `Publicar o proxy '${newProxy.name}' para ativá-lo.`,
+                    description: `Publish proxy '${newProxy.name}' to activate it.`,
                     parameters: [{ name: 'id', value: newProxy.id }]
                 }
             ]
         };
     }
     catch (error) {
-        console.error(`Erro ao criar o proxy de API:`, error);
+        console.error(`Error creating API proxy:`, error);
         throw error;
     }
 }
 /**
- * Ferramenta para atualizar um proxy de API existente. Apenas os campos fornecidos serão alterados.
- * @param api Instância da classe AxwayApi.
- * @param id O ID do proxy a ser atualizado.
- * @param name (Opcional) O novo nome para o proxy.
- * @param path (Opcional) O novo caminho para o proxy.
- * @param apiId (Opcional) O novo ID da API de backend.
- * @returns Um objeto de confirmação com os detalhes do proxy atualizado.
+ * Tool to update an existing API proxy. Only the provided fields will be changed.
+ * @param api AxwayApi class instance.
+ * @param id The ID of the proxy to update.
+ * @param name (Optional) The new name for the proxy.
+ * @param path (Optional) The new path for the proxy.
+ * @param apiId (Optional) The new backend API ID.
+ * @returns A confirmation object with the updated proxy details.
  */
 export async function updateApiProxy(api, id, name, path, apiId) {
     try {
         const payload = removeEmptyValues({ name, path, apiId });
         if (Object.keys(payload).length === 0) {
-            return { message: "Nenhum campo fornecido para atualização. Nenhuma ação foi tomada." };
+            return { message: "No fields provided for update. No action was taken." };
         }
         const updatedProxy = await api.updateApiProxy(id, payload);
         return {
-            message: `Proxy de API '${updatedProxy.name}' atualizado com sucesso.`,
+            message: `API proxy '${updatedProxy.name}' updated successfully.`,
             apiProxy: updatedProxy,
             relatedTools: [
                 {
                     tool_name: 'get_api_proxy',
-                    description: 'Ver os detalhes atualizados do proxy.',
+                    description: 'View the updated proxy details.',
                     parameters: [{ name: 'id', value: id }]
                 }
             ]
         };
     }
     catch (error) {
-        console.error(`Erro ao atualizar o proxy de API ${id}:`, error);
+        console.error(`Error updating API proxy ${id}:`, error);
         throw error;
     }
 }
 /**
- * Ferramenta para deletar um proxy de API pelo seu ID.
- * @param api Instância da classe AxwayApi.
- * @param id O ID do proxy a ser deletado.
- * @returns Um objeto de confirmação da exclusão.
+ * Tool to delete an API proxy by ID.
+ * @param api AxwayApi class instance.
+ * @param id The ID of the proxy to delete.
+ * @returns A confirmation object for the deletion.
  */
 export async function deleteApiProxy(api, id) {
     try {
         await api.deleteApiProxy(id);
         return {
-            message: `O proxy de API com ID '${id}' foi deletado com sucesso.`,
+            message: `API proxy with ID '${id}' was deleted successfully.`,
             relatedTools: [
                 {
                     tool_name: 'list_api_proxies',
-                    description: 'Listar os proxies restantes para confirmar a exclusão.',
+                    description: 'List remaining proxies to confirm the deletion.',
                     parameters: []
                 }
             ]
         };
     }
     catch (error) {
-        console.error(`Erro ao deletar o proxy de API ${id}:`, error);
+        console.error(`Error deleting API proxy ${id}:`, error);
         throw error;
     }
 }
 /**
- * Ferramenta para publicar um proxy de API, tornando-o disponível para consumo.
- * @param api Instância da classe AxwayApi.
- * @param id O ID do proxy a ser publicado.
- * @returns Um objeto de confirmação da publicação.
+ * Tool to publish an API proxy, making it available for consumption.
+ * @param api AxwayApi class instance.
+ * @param id The ID of the proxy to publish.
+ * @returns A confirmation object for the publication.
  */
 export async function publishApi(api, id) {
     try {
         const result = await api.publishApi(id);
         return {
-            message: `O proxy de API com ID '${id}' foi publicado com sucesso.`,
+            message: `API proxy with ID '${id}' was published successfully.`,
             details: result,
             relatedTools: [
                 {
                     tool_name: 'get_api_proxy',
-                    description: 'Ver o estado atualizado do proxy.',
+                    description: 'View the updated proxy state.',
                     parameters: [{ name: 'id', value: id }]
                 },
                 {
                     tool_name: 'unpublish_api',
-                    description: 'Reverter a publicação (despublicar).',
+                    description: 'Revert the publication (unpublish).',
                     parameters: [{ name: 'id', value: id }]
                 }
             ]
         };
     }
     catch (error) {
-        console.error(`Erro ao publicar o proxy de API ${id}:`, error);
+        console.error(`Error publishing API proxy ${id}:`, error);
         throw error;
     }
 }
 /**
- * Ferramenta para despublicar um proxy de API, tornando-o indisponível.
- * @param api Instância da classe AxwayApi.
- * @param id O ID do proxy a ser despublicado.
- * @returns Um objeto de confirmação da operação.
+ * Tool to unpublish an API proxy, making it unavailable.
+ * @param api AxwayApi class instance.
+ * @param id The ID of the proxy to unpublish.
+ * @returns A confirmation object for the operation.
  */
 export async function unpublishApi(api, id) {
     try {
         const result = await api.unpublishApi(id);
         return {
-            message: `O proxy de API com ID '${id}' foi despublicado com sucesso.`,
+            message: `API proxy with ID '${id}' was unpublished successfully.`,
             details: result,
             relatedTools: [
                 {
                     tool_name: 'get_api_proxy',
-                    description: 'Ver o estado atualizado do proxy.',
+                    description: 'View the updated proxy state.',
                     parameters: [{ name: 'id', value: id }]
                 },
                 {
                     tool_name: 'publish_api',
-                    description: 'Publicar novamente o proxy.',
+                    description: 'Publish the proxy again.',
                     parameters: [{ name: 'id', value: id }]
                 }
             ]
         };
     }
     catch (error) {
-        console.error(`Erro ao despublicar o proxy de API ${id}:`, error);
+        console.error(`Error unpublishing API proxy ${id}:`, error);
         throw error;
     }
 }
 /**
- * Ferramenta para marcar um proxy de API como obsoleto (deprecated).
- * @param api Instância da classe AxwayApi.
- * @param id O ID do proxy a ser marcado como obsoleto.
- * @returns Um objeto de confirmação da operação.
+ * Tool to mark an API proxy as deprecated.
+ * @param api AxwayApi class instance.
+ * @param id The ID of the proxy to mark as deprecated.
+ * @returns A confirmation object for the operation.
  */
 export async function deprecateApi(api, id) {
     try {
         const result = await api.deprecateApi(id);
         return {
-            message: `O proxy de API com ID '${id}' foi marcado como obsoleto com sucesso.`,
+            message: `API proxy with ID '${id}' was deprecated successfully.`,
             details: result,
             relatedTools: [
                 {
                     tool_name: 'get_api_proxy',
-                    description: 'Ver o estado atualizado do proxy.',
+                    description: 'View the updated proxy state.',
                     parameters: [{ name: 'id', value: id }]
                 }
             ]
         };
     }
     catch (error) {
-        console.error(`Erro ao marcar o proxy de API como obsoleto ${id}:`, error);
+        console.error(`Error deprecating API proxy ${id}:`, error);
         throw error;
     }
 }

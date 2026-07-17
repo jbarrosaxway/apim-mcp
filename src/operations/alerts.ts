@@ -1,21 +1,21 @@
 /**
  * @module src/operations/alerts
- * @description Este módulo contém as operações (ferramentas) para gerenciar as configurações
- * de alertas no Axway API Gateway. Permite listar e atualizar quais tipos de eventos
- * devem gerar um alerta.
+ * @description This module contains the operations (tools) for managing alert
+ * configurations on the Axway API Gateway. Supports listing and updating which event types
+ * should generate an alert.
  */
 
 import { AxwayApi } from "../api.js";
 
 /**
- * Ferramenta para listar a configuração de todos os gatilhos de alerta.
+ * Tool to list the configuration of all alert triggers.
  *
- * Esta função não lista os alertas que já ocorreram, mas sim a configuração que
- * define se um tipo de evento (ex: 'CircuitBreakerHalfOpen') está habilitado
- * para gerar um alerta ou não.
+ * This function does not list alerts that have already fired; it lists the configuration that
+ * defines whether an event type (e.g. 'CircuitBreakerHalfOpen') is enabled
+ * to generate an alert or not.
  *
- * @param api Instância da classe AxwayApi.
- * @returns Um objeto contendo a lista de configurações de alerta e um resumo explicativo.
+ * @param api AxwayApi class instance.
+ * @returns An object containing the alert configuration list and an explanatory summary.
  */
 export async function listAlerts(api: AxwayApi) {
   try {
@@ -29,11 +29,11 @@ export async function listAlerts(api: AxwayApi) {
 
     return {
       alertConfiguration: formattedSettings,
-      summary: "Esta ferramenta lista a configuração que define quais eventos irão disparar um alerta. Ela não lista os alertas já disparados.",
+      summary: "This tool lists the configuration that defines which events will trigger an alert. It does not list alerts that have already fired.",
       relatedTools: [
         {
           tool_name: 'update_alert_settings',
-          description: 'Habilitar ou desabilitar um ou mais gatilhos de alerta.',
+          description: 'Enable or disable one or more alert triggers.',
           parameters: [
             { name: 'settings', value: '{"ServiceBody": true, "CertAboutToExpire": false}' }
           ]
@@ -41,19 +41,19 @@ export async function listAlerts(api: AxwayApi) {
       ]
     };
   } catch (error) {
-    console.error(`Erro ao listar as configurações de alerta:`, error);
+    console.error(`Error listing alert configurations:`, error);
     throw error;
   }
 }
 
 /**
- * Ferramenta para atualizar a configuração dos gatilhos de alerta.
+ * Tool to update the alert trigger configuration.
  *
- * @param api Instância da classe AxwayApi.
- * @param settings Um objeto JSON onde cada chave é o nome de um evento de alerta
- *                 e o valor é um booleano (`true` para habilitar, `false` para desabilitar).
- *                 Exemplo: `{"ServiceBody": true, "CertAboutToExpire": false}`
- * @returns Um objeto confirmando a atualização e mostrando a nova configuração.
+ * @param api AxwayApi class instance.
+ * @param settings A JSON object where each key is an alert event name
+ *                 and the value is a boolean (`true` to enable, `false` to disable).
+ *                 Example: `{"ServiceBody": true, "CertAboutToExpire": false}`
+ * @returns An object confirming the update and showing the new configuration.
  */
 export async function updateAlertSettings(api: AxwayApi, settings: any) {
   try {
@@ -65,18 +65,18 @@ export async function updateAlertSettings(api: AxwayApi, settings: any) {
       };
     });
     return {
-      message: "Configurações de alerta atualizadas com sucesso.",
+      message: "Alert settings updated successfully.",
       alertConfiguration: formattedSettings,
       relatedTools: [
         {
           tool_name: 'list_alerts',
-          description: 'Verificar a configuração atualizada de todos os alertas.',
+          description: 'Verify the updated configuration of all alerts.',
           parameters: []
         }
       ]
     };
   } catch (error) {
-    console.error(`Erro ao atualizar as configurações de alerta:`, error);
+    console.error(`Error updating alert configurations:`, error);
     throw error;
   }
 } 

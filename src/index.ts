@@ -1,15 +1,15 @@
 /**
  * @module src/index
- * @description Ponto de entrada principal para o servidor Axway MCP (Model-Context-Protocol).
+ * @description Main entry point for the Axway MCP (Model Context Protocol) server.
  *
- * Este arquivo é responsável por:
- * 1. Inicializar e configurar o servidor MCP usando o SDK `@modelcontextprotocol/sdk`.
- * 2. Gerenciar sessões e transportes HTTP, incluindo Server-Sent Events (SSE) para comunicação em tempo real.
- * 3. Suportar transporte stdio para comunicação direta via stdin/stdout.
- * 4. Importar todas as operações (ferramentas) dos arquivos no diretório `src/operations`.
- * 5. Registrar cada ferramenta no servidor MCP, mapeando a definição da ferramenta (de `src/tools.ts`)
- *    para sua implementação real.
- * 6. Iniciar o servidor HTTP para escutar as requisições do cliente (ex: um modelo de linguagem).
+ * This file is responsible for:
+ * 1. Initializing and configuring the MCP server using the `@modelcontextprotocol/sdk`.
+ * 2. Managing HTTP sessions and transports, including Server-Sent Events (SSE) for real-time communication.
+ * 3. Supporting stdio transport for direct communication via stdin/stdout.
+ * 4. Importing all operations (tools) from files under `src/operations`.
+ * 5. Registering each tool on the MCP server, mapping the tool definition (from `src/tools.ts`)
+ *    to its real implementation.
+ * 6. Starting the HTTP server to listen for client requests (e.g. a language model).
  */
 
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
@@ -75,12 +75,12 @@ import * as quotas from "./operations/quotas.js";
 const SESSION_ID_HEADER_NAME = "mcp-session-id";
 
 /**
- * Servidor MCP customizado para interagir com o ambiente Axway.
+ * Custom MCP server for interacting with the Axway environment.
  *
- * Estende a classe base `McpServer` para incluir:
- * - Uma instância da `AxwayApi` para comunicação com a plataforma Axway.
- * - Gerenciamento de múltiplos transportes HTTP, um para cada sessão de cliente.
- * - Suporte a transporte stdio para comunicação direta via stdin/stdout.
+ * Extends the base `McpServer` class to include:
+ * - An `AxwayApi` instance for communicating with the Axway platform.
+ * - Management of multiple HTTP transports, one per client session.
+ * - Support for stdio transport for direct communication via stdin/stdout.
  */
 class AxwayMcpServer extends McpServer {
   private api: AxwayApi;
@@ -94,7 +94,7 @@ class AxwayMcpServer extends McpServer {
         name: "axway-mcp",
         version: SERVER_VERSION,
         description:
-          "Axway API Gateway (ANM) + API Manager: diagnóstico (topologia, tráfego, erros, métricas), monitorização e administração APIM",
+          "Axway API Gateway (ANM) + API Manager: diagnostics (topology, traffic, errors, metrics), monitoring, and APIM administration",
       },
       { instructions: SERVER_INSTRUCTIONS }
     );
@@ -105,7 +105,7 @@ class AxwayMcpServer extends McpServer {
     this.registerApimResources();
     this.installScopedToolsListHandler();
     
-    // Apenas configurar limpeza de sessões se estiver no modo HTTP
+    // Only set up session cleanup in HTTP mode
     if (this.transportMode === 'http') {
       setInterval(() => {
         this.cleanupOldSessions();
@@ -113,7 +113,7 @@ class AxwayMcpServer extends McpServer {
     }
   }
 
-  /** MCP prompt: playbook explícito para perguntas de saúde/problema no Gateway. */
+  /** MCP prompt: explicit playbook for Gateway health/incident questions. */
   private registerDiagnosticPrompt() {
     this.registerPrompt(
       "axway_apim_gateway_diagnose",
@@ -135,7 +135,7 @@ class AxwayMcpServer extends McpServer {
       async ({ symptom, timeWindow }) => {
         const text = DIAGNOSE_GATEWAY_PROMPT.replace(
           "{{symptom}}",
-          symptom || "(não especificado)"
+          symptom || "(not specified)"
         ).replace("{{timeWindow}}", timeWindow || "1h");
         return {
           messages: [{ role: "user" as const, content: { type: "text" as const, text } }],
@@ -228,8 +228,8 @@ class AxwayMcpServer extends McpServer {
   }
 
   /**
-   * Substitui tools/list para anunciar apenas tools permitidas pelo scope efectivo,
-   * incluindo annotations Axway (I13–I17).
+   * Overrides tools/list to advertise only tools allowed by the effective scope,
+   * including Axway annotations (I13–I17).
    */
   private installScopedToolsListHandler() {
     this.server.setRequestHandler(ListToolsRequestSchema, () => {
@@ -355,7 +355,7 @@ class AxwayMcpServer extends McpServer {
           console.log(`StreamableHTTP: New session created: ${transport.sessionId}`);
           this.transports[transport.sessionId] = transport;
           this.sessionTimestamps[transport.sessionId] = Date.now();
-          const sessionId = transport.sessionId; // Captura o valor para usar no onclose
+          const sessionId = transport.sessionId; // Capture value for use in onclose
           transport.onclose = () => {
             delete this.transports[sessionId];
             delete this.sessionTimestamps[sessionId];
@@ -388,9 +388,9 @@ class AxwayMcpServer extends McpServer {
   }
 
   /**
-   * Registra todas as ferramentas definidas em `src/tools.ts` no servidor MCP.
-   * Este método itera sobre cada definição de ferramenta e a mapeia para sua
-   * função de implementação correspondente no diretório `src/operations`.
+   * Registers all tools defined in `src/tools.ts` on the MCP server.
+   * Iterates each tool definition and maps it to the corresponding
+   * implementation function under `src/operations`.
    * @internal
    */
   private registerTools() {
@@ -637,11 +637,11 @@ class AxwayMcpServer extends McpServer {
   }
 }
 /**
- * Função principal que inicializa e inicia o servidor.
- * Detecta automaticamente se deve usar transporte stdio ou HTTP baseado no ambiente.
+ * Main function that initializes and starts the server.
+ * Automatically detects whether to use stdio or HTTP transport based on the environment.
  */
 async function main() {
-  // Detectar o modo de transporte baseado em variáveis de ambiente ou argumentos
+  // Detect transport mode from environment variables or CLI arguments
   const useStdio = process.env.TRANSPORT_MODE === 'stdio' || 
                    process.argv.includes('--stdio') || 
                    process.argv.includes('-s');
@@ -650,41 +650,41 @@ async function main() {
   const server = new AxwayMcpServer(transportMode);
   
   if (transportMode === 'stdio') {
-    // Modo stdio: perfil via MCP_TOOL_PROFILE (default admin); sem OIDC
+    // Stdio mode: profile via MCP_TOOL_PROFILE (default admin); no OIDC
     const profile = loadStdioToolProfile();
     const stdioAuth = authInfoFromProfile(profile);
     setFallbackAuth(stdioAuth);
     console.error(
-      `Axway MCP Server iniciado em modo stdio (MCP_TOOL_PROFILE=${profile})`
+      `Axway MCP Server started in stdio mode (MCP_TOOL_PROFILE=${profile})`
     );
     const stdioTransport = new StdioServerTransport();
     
     stdioTransport.onclose = () => {
-      console.error('Conexão stdio fechada');
+      console.error('Stdio connection closed');
       process.exit(0);
     };
     
     stdioTransport.onerror = (error) => {
-      console.error('Erro na conexão stdio:', error);
+      console.error('Stdio connection error:', error);
       process.exit(1);
     };
     
-    // connect() já chama start() automaticamente
+    // connect() already calls start() automatically
     await runWithAuth(stdioAuth, () => server.connect(stdioTransport));
     
-    console.error('Axway MCP Server pronto para comunicação via stdio');
+    console.error('Axway MCP Server ready for stdio communication');
   } else {
-    // Modo HTTP: servidor web com StreamableHTTP
-    // Fail-fast se OIDC estiver mal configurado
+    // HTTP mode: web server with StreamableHTTP
+    // Fail-fast if OIDC is misconfigured
     loadAuthConfig();
     logAuthStartup();
-    // MCP_AUTH_MODE=none → getAuthScopes trata null como admin
+    // MCP_AUTH_MODE=none → getAuthScopes treats null as admin
     setFallbackAuth(null);
 
     const port = process.env.PORT || 3000;
     
     const httpServer = createServer((req, res) => {
-      // RFC 9728 Protected Resource Metadata (sem autenticação)
+      // RFC 9728 Protected Resource Metadata (no authentication)
       if (handleWellKnown(req, res)) {
         return;
       }
@@ -692,7 +692,7 @@ async function main() {
       (async () => {
         const authResult = await authenticateHttpRequest(req, res);
         if (authResult === false) {
-          return; // 401/403 já escrito
+          return; // 401/403 already written
         }
         // authResult is AuthInfo | null (null = auth disabled)
         await runWithAuth(authResult, () => server.handleRequest(req, res));
