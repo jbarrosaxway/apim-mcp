@@ -36,6 +36,12 @@ export const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
   "axway_apim_time_get": {"readOnlyHint":true,"destructiveHint":false,"idempotentHint":true,"openWorldHint":true},
   "axway_apim_config_get": {"readOnlyHint":true,"destructiveHint":false,"idempotentHint":true,"openWorldHint":true},
   "axway_apim_topology_list": {"readOnlyHint":true,"destructiveHint":false,"idempotentHint":true,"openWorldHint":true},
+  "axway_apim_deployment_archive_get": {"readOnlyHint":true,"destructiveHint":false,"idempotentHint":true,"openWorldHint":true},
+  "axway_apim_policy_archive_get": {"readOnlyHint":true,"destructiveHint":false,"idempotentHint":true,"openWorldHint":true},
+  "axway_apim_environment_archive_get": {"readOnlyHint":true,"destructiveHint":false,"idempotentHint":true,"openWorldHint":true},
+  "axway_apim_envsettings_get": {"readOnlyHint":true,"destructiveHint":false,"idempotentHint":true,"openWorldHint":true},
+  "axway_apim_group_conf_get": {"readOnlyHint":true,"destructiveHint":false,"idempotentHint":true,"openWorldHint":true},
+  "axway_apim_deployments_list": {"readOnlyHint":true,"destructiveHint":false,"idempotentHint":true,"openWorldHint":true},
   "axway_apim_instancetraffic_get": {"readOnlyHint":true,"destructiveHint":false,"idempotentHint":true,"openWorldHint":true},
   "axway_apim_servicetraffic_get": {"readOnlyHint":true,"destructiveHint":false,"idempotentHint":true,"openWorldHint":true},
   "axway_apim_metrics_get": {"readOnlyHint":true,"destructiveHint":false,"idempotentHint":true,"openWorldHint":true},
@@ -78,6 +84,10 @@ export const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
   "axway_apim_alert_update": {"readOnlyHint":false,"destructiveHint":false,"idempotentHint":true,"openWorldHint":true},
   "axway_apim_quota_get": {"readOnlyHint":true,"destructiveHint":false,"idempotentHint":true,"openWorldHint":true},
   "axway_apim_quota_update": {"readOnlyHint":false,"destructiveHint":false,"idempotentHint":true,"openWorldHint":true},
+  "axway_apim_fragment_validate": {"readOnlyHint":true,"destructiveHint":false,"idempotentHint":true,"openWorldHint":false},
+  "axway_apim_fragment_yaml_to_xml": {"readOnlyHint":false,"destructiveHint":false,"idempotentHint":true,"openWorldHint":false},
+  "axway_apim_fragment_sync_ps_project": {"readOnlyHint":false,"destructiveHint":false,"idempotentHint":true,"openWorldHint":false},
+  "axway_apim_fragment_gateway_resolve": {"readOnlyHint":true,"destructiveHint":false,"idempotentHint":true,"openWorldHint":false},
 };
 
 /**
@@ -87,6 +97,12 @@ export const TOOL_REQUIRED_PROFILE: Record<string, ToolProfile> = {
   "axway_apim_time_get": "observe",
   "axway_apim_config_get": "observe",
   "axway_apim_topology_list": "observe",
+  "axway_apim_deployment_archive_get": "observe",
+  "axway_apim_policy_archive_get": "observe",
+  "axway_apim_environment_archive_get": "observe",
+  "axway_apim_envsettings_get": "observe",
+  "axway_apim_group_conf_get": "observe",
+  "axway_apim_deployments_list": "observe",
   "axway_apim_instancetraffic_get": "observe",
   "axway_apim_servicetraffic_get": "observe",
   "axway_apim_metrics_get": "observe",
@@ -129,6 +145,10 @@ export const TOOL_REQUIRED_PROFILE: Record<string, ToolProfile> = {
   "axway_apim_alert_update": "operator",
   "axway_apim_quota_get": "observe",
   "axway_apim_quota_update": "operator",
+  "axway_apim_fragment_validate": "observe",
+  "axway_apim_fragment_yaml_to_xml": "operator",
+  "axway_apim_fragment_sync_ps_project": "operator",
+  "axway_apim_fragment_gateway_resolve": "observe",
 };
 
 /** Optional human titles for tools/list. */
@@ -136,6 +156,12 @@ export const TOOL_TITLES: Record<string, string> = {
   "axway_apim_time_get": "MCP server time",
   "axway_apim_config_get": "API Manager config",
   "axway_apim_topology_list": "Gateway: topology (1st step)",
+  "axway_apim_deployment_archive_get": "Gateway: retrieve deployed FED archive",
+  "axway_apim_policy_archive_get": "Gateway: retrieve Policy Archive (.pol)",
+  "axway_apim_environment_archive_get": "Gateway: retrieve Environment Archive (.env)",
+  "axway_apim_envsettings_get": "Gateway: environmentalized settings (JSON)",
+  "axway_apim_group_conf_get": "Gateway: read group conf file",
+  "axway_apim_deployments_list": "Gateway: list domain deployments / archive IDs",
   "axway_apim_instancetraffic_get": "Gateway: instance traffic summary",
   "axway_apim_servicetraffic_get": "Gateway: service traffic",
   "axway_apim_metrics_get": "Gateway: metrics timeline",
@@ -178,6 +204,10 @@ export const TOOL_TITLES: Record<string, string> = {
   "axway_apim_alert_update": "Gateway: update alert settings",
   "axway_apim_quota_get": "APIM: get application quotas",
   "axway_apim_quota_update": "APIM: update application quotas",
+  "axway_apim_fragment_validate": "Fragment: validate YAML/XML",
+  "axway_apim_fragment_yaml_to_xml": "Fragment: YAML to XML (Federated)",
+  "axway_apim_fragment_sync_ps_project": "Fragment: sync ps-project",
+  "axway_apim_fragment_gateway_resolve": "Fragment: resolve gatewayHome (tiers)",
 };
 
 export function parseToolProfile(value: string | undefined): ToolProfile | null {

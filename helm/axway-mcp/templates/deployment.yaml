@@ -52,6 +52,11 @@ spec:
               value: {{ .Values.env.MCP_RESOURCE_URL | quote }}
             - name: MCP_REQUIRED_SCOPES
               value: {{ .Values.env.MCP_REQUIRED_SCOPES | quote }}
+            {{- if .Values.env.AXWAY_GATEWAY_HOME }}
+            - name: AXWAY_GATEWAY_HOME
+              value: {{ .Values.env.AXWAY_GATEWAY_HOME | quote }}
+            {{- end }}
+
             {{- if .Values.env.OIDC_JWKS_URI }}
             - name: OIDC_JWKS_URI
               value: {{ .Values.env.OIDC_JWKS_URI | quote }}

@@ -48,9 +48,17 @@ import {
   TOOL_TITLES,
 } from "./auth/tool-scopes.js";
 import {
+  ANALYZE_API_ROOTCAUSE_PROMPT,
   DIAGNOSE_GATEWAY_PROMPT,
+  POLICY_DEVELOP_PROMPT,
   SERVER_INSTRUCTIONS,
 } from "./mcp-guidance.js";
+import {
+  loadGatewayCodeAnalysisPlaybook,
+  loadPolicyDevelopmentPlaybook,
+  loadPolicyDevDoc,
+  listPolicyDevDocSlugs,
+} from "./playbook.js";
 import { ResourceTemplate } from "@modelcontextprotocol/sdk/server/mcp.js";
 
 const SERVER_VERSION = "1.0.17";
@@ -70,6 +78,7 @@ import * as repository from "./operations/repository.js";
 import * as access from "./operations/access.js";
 import * as alerts from "./operations/alerts.js";
 import * as quotas from "./operations/quotas.js";
+import * as fragment from "./operations/fragment.js";
 
 
 const SESSION_ID_HEADER_NAME = "mcp-session-id";
@@ -101,6 +110,8 @@ class AxwayMcpServer extends McpServer {
     this.api = new AxwayApi();
     this.transportMode = transportMode;
     this.registerDiagnosticPrompt();
+    this.registerRootCausePrompt();
+    this.registerPolicyDevelopPrompt();
     this.registerTools();
     this.registerApimResources();
     this.installScopedToolsListHandler();
@@ -137,6 +148,79 @@ class AxwayMcpServer extends McpServer {
           "{{symptom}}",
           symptom || "(not specified)"
         ).replace("{{timeWindow}}", timeWindow || "1h");
+        return {
+          messages: [{ role: "user" as const, content: { type: "text" as const, text } }],
+        };
+      }
+    );
+  }
+
+  /** MCP prompt: Policy Studio / fragment authoring with RAG docs. */
+  private registerPolicyDevelopPrompt() {
+    this.registerPrompt(
+      "axway_apim_policy_develop",
+      {
+        title: "Desenvolver policies no Policy Studio",
+        description:
+          "Use when the user asks to create or change Axway Policy Studio policies, filters, listeners, Portal Alerts, Auth Profiles, YAML/XML configuration fragments, OAuth, or KPS. Guides RAG lookup of Axway apim_policydev docs, filter selection (including API Management Read *), fragment authoring/validation, and import. Side effects: none (guidance). Playbook: axway://apim/playbook/policy-development. RAG pages: axway://apim/docs/policydev/{slug}.",
+        argsSchema: {
+          goal: z
+            .string()
+            .optional()
+            .describe("What to build, e.g. sync org create alert to peer Gateway"),
+          format: z
+            .string()
+            .optional()
+            .describe("yaml, xml, or both — fragment format for the target project"),
+        },
+      },
+      async ({ goal, format }) => {
+        const text = POLICY_DEVELOP_PROMPT.replace(
+          "{{goal}}",
+          goal || "(not specified)"
+        ).replace("{{format}}", format || "both");
+        return {
+          messages: [{ role: "user" as const, content: { type: "text" as const, text } }],
+        };
+      }
+    );
+  }
+
+  /** MCP prompt: FED + agent-side decompile root-cause playbook for API regressions. */
+  private registerRootCausePrompt() {
+    this.registerPrompt(
+      "axway_apim_api_rootcause_analyze",
+      {
+        title: "Analisar causa raiz de API (FED + código Gateway)",
+        description:
+          "Use when an API fails or regresses after Gateway upgrade, especially with invoke policy, Connect to URL, missing query params, routing/destinationURL issues, or when bytecode-level explanation is needed. Chains MCP proxy/traffic tools with axway_apim_deployment_archive_get (Axway Deployment API) and guides the calling agent for FED extract and CFR decompile. Side effects: none (read-only guidance). Playbook resource: axway://apim/playbook/gateway-code-analysis.",
+        argsSchema: {
+          apiPath: z
+            .string()
+            .optional()
+            .describe("Published API path or proxy name, e.g. /bff-app-cart-core/v1"),
+          symptom: z
+            .string()
+            .optional()
+            .describe("Natural-language symptom, e.g. query string not forwarded to BFF"),
+          instanceId: z
+            .string()
+            .optional()
+            .describe("Gateway instanceId from axway_apim_topology_list for FED download via Deployment API"),
+          gatewayPath: z
+            .string()
+            .optional()
+            .describe("Local path to Gateway root or system/lib with matching version JARs for agent-side decompile"),
+        },
+      },
+      async ({ apiPath, symptom, instanceId, gatewayPath }) => {
+        const text = ANALYZE_API_ROOTCAUSE_PROMPT.replace(
+          "{{apiPath}}",
+          apiPath || "(not specified)"
+        )
+          .replace("{{symptom}}", symptom || "(not specified)")
+          .replace("{{instanceId}}", instanceId || "(from topology_list)")
+          .replace("{{gatewayPath}}", gatewayPath || "(not specified)");
         return {
           messages: [{ role: "user" as const, content: { type: "text" as const, text } }],
         };
@@ -208,6 +292,86 @@ class AxwayMcpServer extends McpServer {
     );
 
     this.resource(
+      "apim_playbook_gateway_code_analysis",
+      "axway://apim/playbook/gateway-code-analysis",
+      {
+        description:
+          "Axway Gateway root-cause playbook exposed by this MCP server: tool order, mandatory FED retrieval via Deployment API (axway_apim_deployment_archive_get), FED XML grep targets, and agent-side decompile steps. Aligns with Axway ANM Deployment API swagger. Read-only markdown; attach before deep troubleshooting. Decompile and extract-fed run in the calling agent environment, not as MCP tools.",
+        mimeType: "text/markdown",
+      },
+      async (uri) => ({
+        contents: [
+          {
+            uri: uri.href,
+            mimeType: "text/markdown",
+            text: loadGatewayCodeAnalysisPlaybook(),
+          },
+        ],
+      })
+    );
+
+    this.resource(
+      "apim_playbook_policy_development",
+      "axway://apim/playbook/policy-development",
+      {
+        description:
+          "Axway Policy Studio development playbook: RAG corpus of apim_policydev docs, when to use API Management Read * vs ConnectToURL, YAML/XML fragment authoring and validation, import into FED/projects. Read-only markdown from skill apim-policy-development. Pair with axway://apim/docs/policydev/{slug} for individual doc pages.",
+        mimeType: "text/markdown",
+      },
+      async (uri) => ({
+        contents: [
+          {
+            uri: uri.href,
+            mimeType: "text/markdown",
+            text: loadPolicyDevelopmentPlaybook(),
+          },
+        ],
+      })
+    );
+
+    this.resource(
+      "apim_docs_policydev",
+      new ResourceTemplate("axway://apim/docs/policydev/{slug}", {
+        list: async () => ({
+          resources: listPolicyDevDocSlugs().map((slug) => ({
+            uri: `axway://apim/docs/policydev/${slug}`,
+            name: slug,
+            mimeType: "text/markdown",
+          })),
+        }),
+      }),
+      {
+        description:
+          "One scraped Axway Policy Development doc page as markdown (RAG). Slug matches filename under .cursor/skills/apim-policy-development/docs/rag/ without .md. List via resources/list on this template; start from _manifest via slug index or playbook. Read-only offline mirror of docs.axway.com apim_policydev; re-crawl with crawl-policydev-docs.mjs to refresh.",
+        mimeType: "text/markdown",
+      },
+      async (uri, variables) => {
+        const slug = String(variables.slug || "");
+        const text = loadPolicyDevDoc(slug);
+        if (!text) {
+          return {
+            contents: [
+              {
+                uri: uri.href,
+                mimeType: "text/markdown",
+                text: `# Not found\n\nNo RAG page for slug \`${slug}\`. See \`axway://apim/playbook/policy-development\` and docs/rag/_manifest.md.`,
+              },
+            ],
+          };
+        }
+        return {
+          contents: [
+            {
+              uri: uri.href,
+              mimeType: "text/markdown",
+              text,
+            },
+          ],
+        };
+      }
+    );
+
+    this.resource(
       "apim_instance_traffic",
       new ResourceTemplate("axway://apim/instances/{instance_id}/traffic", {
         list: undefined,
@@ -235,6 +399,9 @@ class AxwayMcpServer extends McpServer {
     this.server.setRequestHandler(ListToolsRequestSchema, () => {
       const scopes = getAuthScopes();
       const allowed = tools().filter((t) => toolAllowed(t.method, scopes));
+      console.log(
+        `StreamableHTTP: tools/list scopes=${scopes.join(" ") || "(none)"} allowed=${allowed.length}/${tools().length}`
+      );
       return {
         tools: allowed.map((t) => {
           const schema = zodToJsonSchema(z.object(t.parameters), {
@@ -436,6 +603,35 @@ class AxwayMcpServer extends McpServer {
               case "axway_apim_topology_list":
                 result = await topology.listTopology(this.api);
                 break;
+              case "axway_apim_deployment_archive_get":
+                result = await topology.getDeploymentArchive(
+                  this.api,
+                  args.instanceId,
+                  args.savePath,
+                  args.returnBase64
+                );
+                break;
+              case "axway_apim_policy_archive_get":
+                result = await topology.getPolicyArchive(this.api, args);
+                break;
+              case "axway_apim_environment_archive_get":
+                result = await topology.getEnvironmentArchive(this.api, args);
+                break;
+              case "axway_apim_envsettings_get":
+                result = await topology.getEnvSettings(this.api, args);
+                break;
+              case "axway_apim_group_conf_get":
+                result = await topology.getGroupConfFile(
+                  this.api,
+                  args.groupId,
+                  args.filename,
+                  args.savePath,
+                  args.returnBase64
+                );
+                break;
+              case "axway_apim_deployments_list":
+                result = await topology.listDomainDeployments(this.api);
+                break;
               case "axway_apim_instancetraffic_get":
                 result = await monitoring.getInstanceTraffic(this.api, args.instanceId);
                 break;
@@ -579,6 +775,18 @@ class AxwayMcpServer extends McpServer {
                 break;
               case "axway_apim_catalog_get":
                 result = await proxies.getApiCatalog(this.api);
+                break;
+              case "axway_apim_fragment_validate":
+                result = await fragment.validateFragment(this.api, args);
+                break;
+              case "axway_apim_fragment_yaml_to_xml":
+                result = await fragment.fragmentYamlToXml(this.api, args);
+                break;
+              case "axway_apim_fragment_sync_ps_project":
+                result = await fragment.syncPsProjectFromFragment(args);
+                break;
+              case "axway_apim_fragment_gateway_resolve":
+                result = await fragment.resolveFragmentGateway(this.api, args);
                 break;
               default:
                 throw new Error(`Tool '${tool.method}' is defined but not implemented in the server.`);

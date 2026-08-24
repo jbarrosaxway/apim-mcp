@@ -193,6 +193,113 @@ export class AxwayApi {
     return response.data;
   }
 
+  /**
+   * Retrieves the deployed FED via Axway Deployment API, with Routing API fallback for EMT.
+   * @see Deployment API GET /deployment/archive/service/{serviceID}
+   * @see Routing API GET /router/service/{instance}/api/configuration/archive
+   */
+  async getFedArchive(serviceId: string): Promise<{
+    payload: any;
+    source: "deployment-api" | "routing-api";
+  }> {
+    const encoded = encodeURIComponent(serviceId);
+    const deploymentPath = `/deployment/archive/service/${encoded}`;
+    const routingPath = `/router/service/${encoded}/api/configuration/archive`;
+
+    try {
+      const response = await this.getGateway(deploymentPath);
+      return { payload: response.data, source: "deployment-api" };
+    } catch (error: any) {
+      const status =
+        error.response?.status ??
+        Number((String(error.message).match(/Status (\d{3})/) || [])[1]);
+      const body = error.response?.data;
+      const bodyText =
+        typeof body === "string" ? body : JSON.stringify(body ?? {});
+      const messageText = String(error.message || bodyText);
+      const emtBlocked =
+        status === 405 ||
+        status === 501 ||
+        /externally managed topology/i.test(bodyText) ||
+        /externally managed topology/i.test(messageText);
+
+      if (!emtBlocked) {
+        throw error;
+      }
+
+      try {
+        const response = await this.getGateway(routingPath);
+        return { payload: response.data, source: "routing-api" };
+      } catch (fallbackError: any) {
+        const primaryMsg = error.message || String(error);
+        const fallbackMsg = fallbackError.message || String(fallbackError);
+        throw new Error(
+          `FED retrieval failed on Deployment API (${primaryMsg}) and Routing API fallback (${fallbackMsg}). ` +
+            "For EMT/K8s, verify instanceId from axway_apim_topology_list and Gateway credentials."
+        );
+      }
+    }
+  }
+
+  /** GET /deployment/archive/policy/service/{serviceID} — Policy Archive (.pol). */
+  async getPolicyArchiveByService(serviceId: string): Promise<any> {
+    const encoded = encodeURIComponent(serviceId);
+    const response = await this.getGateway(`/deployment/archive/policy/service/${encoded}`);
+    return response.data;
+  }
+
+  /** GET /deployment/archive/policy/{groupID}/{archiveID} */
+  async getPolicyArchiveByGroup(groupId: string, archiveId: string): Promise<any> {
+    const g = encodeURIComponent(groupId);
+    const a = encodeURIComponent(archiveId);
+    const response = await this.getGateway(`/deployment/archive/policy/${g}/${a}`);
+    return response.data;
+  }
+
+  /** GET /deployment/archive/environment/service/{serviceID} — Environment Archive (.env). */
+  async getEnvironmentArchiveByService(serviceId: string): Promise<any> {
+    const encoded = encodeURIComponent(serviceId);
+    const response = await this.getGateway(`/deployment/archive/environment/service/${encoded}`);
+    return response.data;
+  }
+
+  /** GET /deployment/archive/environment/{groupID}/{archiveID} */
+  async getEnvironmentArchiveByGroup(groupId: string, archiveId: string): Promise<any> {
+    const g = encodeURIComponent(groupId);
+    const a = encodeURIComponent(archiveId);
+    const response = await this.getGateway(`/deployment/archive/environment/${g}/${a}`);
+    return response.data;
+  }
+
+  /** GET /deployment/envsettings/service/{serviceID} — environmentalized settings JSON. */
+  async getEnvSettingsByService(serviceId: string): Promise<any> {
+    const encoded = encodeURIComponent(serviceId);
+    const response = await this.getGateway(`/deployment/envsettings/service/${encoded}`);
+    return response.data;
+  }
+
+  /** GET /deployment/envsettings/{groupID}/{archiveID} */
+  async getEnvSettingsByGroup(groupId: string, archiveId: string): Promise<any> {
+    const g = encodeURIComponent(groupId);
+    const a = encodeURIComponent(archiveId);
+    const response = await this.getGateway(`/deployment/envsettings/${g}/${a}`);
+    return response.data;
+  }
+
+  /** GET /deployment/group/conf/{groupID}/{filename} — file from group conf directory. */
+  async getGroupConfFile(groupId: string, filename: string): Promise<any> {
+    const g = encodeURIComponent(groupId);
+    const f = encodeURIComponent(filename);
+    const response = await this.getGateway(`/deployment/group/conf/${g}/${f}`);
+    return response.data;
+  }
+
+  /** GET /deployment/domain/deployments — archive IDs and deployment metadata. */
+  async listDomainDeployments(): Promise<any> {
+    const response = await this.getGateway(`/deployment/domain/deployments`);
+    return response.data;
+  }
+
   // --- Monitoring API methods ---
 
   /**

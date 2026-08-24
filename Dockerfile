@@ -29,8 +29,8 @@ FROM node:20-alpine AS production
 # Define o diretório de trabalho
 WORKDIR /app
 
-# Install tzdata to allow timezone changes
-RUN apk add --no-cache tzdata
+# tzdata + skill scripts deps (extract-fed.sh, find-in-jars.py); JRE/CFR via volume mount
+RUN apk add --no-cache tzdata bash unzip python3
 
 # Set default timezone, can be overridden by docker run -e TZ=...
 ENV TZ=UTC
@@ -46,6 +46,10 @@ COPY --from=builder /app/package.json ./package.json
 
 # Copia o código compilado da fase de build
 COPY --from=builder /app/build ./build
+
+# Skills (gateway-code-analysis scripts + policy-development RAG/playbook)
+COPY --from=builder /app/.cursor/skills ./.cursor/skills
+RUN find ./.cursor/skills -type f -name '*.sh' -exec chmod +x {} \;
 
 # Muda a propriedade dos ficheiros para o nosso utilizador não-root
 RUN chown -R appuser:appgroup /app

@@ -1,0 +1,14 @@
+# Exemplo para INSTALL_DIR/conf/envSettings.props (por instancia/grupo do Gateway origem).
+#
+# --- Peer sync (Call Target Sync Endpoint) ---
+# Selector: ${env.CLIENT.REGISTRY.SYNC.PEER.URL}${sync.path}
+# Valor = base URL do Gateway peer (Receive), SEM path e SEM barra final.
+# sync.path e definido pelas policies Send (ex. /api/sync/v1/organization).
+env.CLIENT.REGISTRY.SYNC.PEER.URL=http://CHANGE_ME_PEER_HOST:18090
+#
+# APIM local (Call Local APIM): NAO usa envSettings — Remote Host local-apimanager
+# no fragmento (Addresses localhost:8075 por omissao; editar host/port no PS).
+#
+# Equivalente sem prefixo env. (o runtime tambem aceita):
+# CLIENT.REGISTRY.SYNC.PEER.URL=http://CHANGE_ME_PEER_HOST:18090
+

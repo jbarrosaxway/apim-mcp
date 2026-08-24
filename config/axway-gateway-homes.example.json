@@ -1,0 +1,13 @@
+{
+  "mappings": [
+    {
+      "productVersion": "7.7.20260530",
+      "gatewayHome": "/opt/axway/7.7.20260530"
+    },
+    {
+      "productVersion": "7.7.20260530",
+      "gatewayHome": "C:\\Axway-7.7.20260530"
+    }
+  ],
+  "defaultGatewayHome": null
+}

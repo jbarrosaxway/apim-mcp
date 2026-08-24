@@ -383,6 +383,159 @@ const tool44 = {
   }).shape,
 };
 
+const tool45 = {
+  method: "axway_apim_deployment_archive_get",
+  description: "Retrieves the deployed Deployment Archive (.fed) for a Gateway instance per Axway ANM Deployment API. Primary: GET /deployment/archive/service/{serviceID}; automatic fallback on EMT/405: GET /router/service/{instance}/api/configuration/archive. Call axway_apim_topology_list first for instanceId (= serviceID). Params: instanceId (optional if single instance); savePath (optional, e.g. /workspace/gateway.fed on MCP host); returnBase64 (optional, default true when savePath omitted — inline base64 up to 8MB for remote agents). Read-only GET; returns source, byteLength, dataBase64 or savedPath, agentNextSteps. Decompile/extract is done by the calling agent using resource axway://apim/playbook/gateway-code-analysis. 404 stale instanceId; 401/403 auth; backoff on 5xx.",
+  parameters: z.object({
+    instanceId: z.string().optional().describe("Gateway instance ID from axway_apim_topology_list (= Axway serviceID). Required when multiple instances exist."),
+    savePath: z.string().optional().describe("Filesystem path on the MCP server to write the decoded .fed ZIP, e.g. /workspace/gateway.fed"),
+    returnBase64: z.boolean().optional().describe("Include result.data as base64 in JSON (default true when savePath is omitted; max 8MB inline). Set false to avoid large payloads when using savePath only."),
+  }).shape,
+};
+
+const archiveLocatorParams = {
+  instanceId: z.string().optional().describe("Gateway instance ID (= serviceID). Prefer this; required when multiple instances and groupId/archiveId omitted."),
+  groupId: z.string().optional().describe("Topology group ID. Use with archiveId as alternative to instanceId."),
+  archiveId: z.string().optional().describe("Deployment archive ID (often rootProperties.Id from axway_apim_deployments_list). Use with groupId."),
+  savePath: z.string().optional().describe("Optional path on MCP host to write decoded archive bytes."),
+  returnBase64: z.boolean().optional().describe("Include base64 in JSON (default true when savePath omitted; max 8MB inline)."),
+};
+
+const tool46 = {
+  method: "axway_apim_policy_archive_get",
+  description: "Downloads the Policy Archive (.pol) for a Gateway instance or group archive via Axway Deployment API. GET /deployment/archive/policy/service/{serviceID} or GET /deployment/archive/policy/{groupID}/{archiveID}. Use with environment_archive_get when client cannot merge pol+env locally. Params: instanceId OR (groupId+archiveId); optional savePath/returnBase64. Read-only. Resolve archiveId via axway_apim_deployments_list. 404; 401/403; backoff on 5xx.",
+  parameters: z.object(archiveLocatorParams).shape,
+};
+
+const tool47 = {
+  method: "axway_apim_environment_archive_get",
+  description: "Downloads the Environment Archive (.env) for a Gateway instance or group archive via Axway Deployment API. GET /deployment/archive/environment/service/{serviceID} or GET /deployment/archive/environment/{groupID}/{archiveID}. Complements policy_archive_get / deployment_archive_get (.fed). Params: instanceId OR (groupId+archiveId); optional savePath/returnBase64. Read-only. 404; 401/403; backoff on 5xx.",
+  parameters: z.object(archiveLocatorParams).shape,
+};
+
+const tool48 = {
+  method: "axway_apim_envsettings_get",
+  description: "Reads environmentalized settings for a deployed archive as JSON (not a ZIP). GET /deployment/envsettings/service/{serviceID} or GET /deployment/envsettings/{groupID}/{archiveID}. Useful to inspect env overrides without downloading the .env binary. Params: instanceId OR (groupId+archiveId). Read-only. Prefer after topology_list / deployments_list. 404; 401/403; backoff on 5xx.",
+  parameters: z.object({
+    instanceId: z.string().optional().describe("Gateway instance ID (= serviceID)."),
+    groupId: z.string().optional().describe("Group ID; use with archiveId."),
+    archiveId: z.string().optional().describe("Archive ID; use with groupId."),
+  }).shape,
+};
+
+const tool49 = {
+  method: "axway_apim_group_conf_get",
+  description: "Reads a file from the group's conf directory via GET /deployment/group/conf/{groupID}/{filename}. Axway documents this as an internal managedomain helper; may return secrets. Params: groupId (from topology), filename (simple name, no path separators), optional savePath/returnBase64. Read-only but sensitive. Prefer deployment/policy/environment archive tools for standard config. 404; 401/403; backoff on 5xx.",
+  parameters: z.object({
+    groupId: z.string().describe("Topology group ID (e.g. emtGroup)."),
+    filename: z.string().describe("File name under the group conf directory (no path separators)."),
+    savePath: z.string().optional().describe("Optional path on MCP host to write the file."),
+    returnBase64: z.boolean().optional().describe("Include base64/content in JSON when applicable."),
+  }).shape,
+};
+
+const tool50 = {
+  method: "axway_apim_deployments_list",
+  description: "Lists deployment metadata for all API Servers in the domain (GET /deployment/domain/deployments), including archive IDs typically in rootProperties.Id. Use before groupId+archiveId downloads (policy/environment/envsettings) or to audit what is deployed where. No parameters. Read-only. Complementary to topology_list (topology has instances; this has archive identity). 401/403; backoff on 5xx.",
+  parameters: z.object({}).shape,
+};
+
+const tool51 = {
+  method: "axway_apim_fragment_validate",
+  description:
+    "Tier 0 (sempre): valida fragment YAML/XML offline (parse, regras estáticas, anti-loop, Portal Alerts) — só Python 3, sem Axway. Tier 1 (opcional): yamles validate + import dry-run quando gatewayHome está resolvido (parâmetro gatewayHome, instanceId+mapeamento productVersion→gatewayHome em config/axway-gateway-homes.json, AXWAY_GATEWAY_HOME, ou entrada única no mapeamento). strict e regenerateXml exigem Tier 1. Use após editar fragment, antes de import no Policy Studio. Params: fragmentPath, yamlOnly, xmlOnly, strict, gatewayHome, instanceId, regenerateXml. Read-only no modo offline; regenerateXml grava fragment-xml/.",
+  parameters: z.object({
+    fragmentPath: z
+      .string()
+      .optional()
+      .describe(
+        "Package root relative to repo or absolute, default policies/client-registry-sync"
+      ),
+    yamlOnly: z.boolean().optional().describe("Validate YAML only"),
+    xmlOnly: z.boolean().optional().describe("Validate XML only"),
+    strict: z
+      .boolean()
+      .optional()
+      .describe("Tier 1: fail if Axway gatewayHome cannot be resolved"),
+    gatewayHome: z
+      .string()
+      .optional()
+      .describe("Axway install root override (Tier 1); highest priority"),
+    instanceId: z
+      .string()
+      .optional()
+      .describe(
+        "Gateway instanceId from axway_apim_topology_list — resolves productVersion and looks up gatewayHome mapping"
+      ),
+    regenerateXml: z
+      .boolean()
+      .optional()
+      .describe(
+        "Tier 1: regenerate XML before validate via yaml-frag-to-xml (writes files; needs resolved gatewayHome)"
+      ),
+  }).shape,
+};
+
+const tool52 = {
+  method: "axway_apim_fragment_yaml_to_xml",
+  description:
+    "Tier 1 only: regenerates Policy Studio-compatible XML from YAML via Federated Entity Store (yaml-frag-to-xml.py). Requires resolved gatewayHome (gatewayHome param, instanceId+mapping, AXWAY_GATEWAY_HOME, or single mapping entry). Fails clearly if no mapping for target productVersion — use axway_apim_fragment_gateway_resolve to diagnose. After YAML edits before Federated/XML import. Writes xmlOutputPath. Params: fragmentPath, xmlOutputPath, gatewayHome, instanceId. Run axway_apim_fragment_validate after export.",
+  parameters: z.object({
+    fragmentPath: z
+      .string()
+      .optional()
+      .describe("Package root, default policies/client-registry-sync"),
+    xmlOutputPath: z
+      .string()
+      .optional()
+      .describe(
+        "Output XML path; default fragment-xml/client-registry-sync-fragment.xml under package"
+      ),
+    gatewayHome: z
+      .string()
+      .optional()
+      .describe("Axway install root override (Tier 1)"),
+    instanceId: z
+      .string()
+      .optional()
+      .describe(
+        "Gateway instanceId — topology productVersion → gatewayHome mapping lookup"
+      ),
+  }).shape,
+};
+
+const tool54 = {
+  method: "axway_apim_fragment_gateway_resolve",
+  description:
+    "Read-only: shows how Tier 1 fragment tools would resolve gatewayHome — productVersion from topology (when instanceId given), mapping from config/axway-gateway-homes.json or AXWAY_GATEWAY_VERSION_MAP, or AXWAY_GATEWAY_HOME. Use before yaml_to_xml when unsure mapping exists. Returns tier 0/1 status and actionable message if Tier 1 unavailable. Params: instanceId (optional), gatewayHome (optional explicit check).",
+  parameters: z.object({
+    instanceId: z
+      .string()
+      .optional()
+      .describe("Gateway instanceId from axway_apim_topology_list for productVersion lookup"),
+    gatewayHome: z
+      .string()
+      .optional()
+      .describe("If set, returns resolution as explicit override without topology"),
+  }).shape,
+};
+
+const tool53 = {
+  method: "axway_apim_fragment_sync_ps_project",
+  description:
+    "Copies canonical fragment/ tree into ps-project-with-sync/ so Policy Studio project stays aligned with fragment YAML (policies, Portal Alerts, Auth Profiles, libraries). Use after editing fragment/ before opening ps-project in Policy Studio. Requires Python 3 on MCP host. Writes ps-project files (overwrites copied subtrees). Params: fragmentPath (package root), psProjectPath (default ps-project-with-sync under package).",
+  parameters: z.object({
+    fragmentPath: z
+      .string()
+      .optional()
+      .describe("Package root, default policies/client-registry-sync"),
+    psProjectPath: z
+      .string()
+      .optional()
+      .describe("Target ps-project path; default ps-project-with-sync under package"),
+  }).shape,
+};
+
 export function tools() {
   return [
     tool0,
@@ -430,5 +583,15 @@ export function tools() {
     tool42,
     tool43,
     tool44,
+    tool45,
+    tool46,
+    tool47,
+    tool48,
+    tool49,
+    tool50,
+    tool51,
+    tool52,
+    tool53,
+    tool54,
   ];
 }
