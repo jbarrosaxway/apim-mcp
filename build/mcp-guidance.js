@@ -117,7 +117,7 @@ export const POLICY_DEVELOP_PROMPT = `Axway Policy Studio development — use sk
 ## Phase A — Scope
 1. Restate the policy goal: Send (Portal Alert), Receive (HTTP listener), local APIM Read, routing, OAuth/KPS, or fragment import.
 2. Attach resource axway://apim/playbook/policy-development
-3. Open matching RAG pages via axway://apim/docs/policydev/{slug} or .cursor/skills/apim-policy-development/docs/rag/_manifest.md
+3. Open matching RAG pages via axway://apim/docs/policydev/{slug} or skills/apim-policy-development/docs/rag/_manifest.md
 
 ## Phase B — Design
 4. Prefer API Management Read * filters for local Client Registry reads (Read Organization supports selects Name|ID).

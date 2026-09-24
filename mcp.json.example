@@ -1,0 +1,104 @@
+{
+  "_notes": {
+    "description": "Multi-client configuration examples for Axway APIM MCP server.",
+    "policy_dev_bootstrap": "To author policies in an external workspace (e.g. apim-policies): run scripts/install-policy-dev-skills.ps1 (or .sh) -TargetWorkspace <path>. See skills/README.md.",
+    "fragment_validation": "Policies are authored in external repos; validate locally using axway_apim_fragment_validate_submit or axway_apim_fragment_validate."
+  },
+  "clientConfigurations": {
+    "cursor": {
+      "fileLocation": ".cursor/mcp.json (in workspace or global Cursor settings)",
+      "content": {
+        "mcpServers": {
+          "Axway MCP (stdio)": {
+            "command": "node",
+            "args": ["C:/path/to/apim-mcp/build/index.js"],
+            "env": {
+              "TRANSPORT_MODE": "stdio",
+              "MCP_TOOL_PROFILE": "admin",
+              "AXWAY_TLS_REJECT_UNAUTHORIZED": "false",
+              "AXWAY_GATEWAY_URL": "https://anm.example.com/api",
+              "AXWAY_GATEWAY_USERNAME": "admin",
+              "AXWAY_GATEWAY_PASSWORD": "replace-me",
+              "AXWAY_MANAGER_URL": "https://apimgr.example.com/api/portal/v1.4",
+              "AXWAY_MANAGER_USERNAME": "apiadmin",
+              "AXWAY_MANAGER_PASSWORD": "replace-me"
+            }
+          },
+          "Axway MCP (remote OIDC)": {
+            "url": "https://mcp.example.com/mcp",
+            "auth": {
+              "CLIENT_ID": "mcp-cursor",
+              "scopes": ["openid", "profile"]
+            }
+          }
+        }
+      }
+    },
+    "claudeDesktop": {
+      "fileLocation": "%APPDATA%\\Claude\\claude_desktop_config.json (Windows) or ~/Library/Application Support/Claude/claude_desktop_config.json (macOS)",
+      "content": {
+        "mcpServers": {
+          "axway-apim": {
+            "command": "node",
+            "args": ["C:/path/to/apim-mcp/build/index.js"],
+            "env": {
+              "TRANSPORT_MODE": "stdio",
+              "MCP_TOOL_PROFILE": "admin",
+              "AXWAY_TLS_REJECT_UNAUTHORIZED": "false",
+              "AXWAY_GATEWAY_URL": "https://anm.example.com/api",
+              "AXWAY_GATEWAY_USERNAME": "admin",
+              "AXWAY_GATEWAY_PASSWORD": "replace-me",
+              "AXWAY_MANAGER_URL": "https://apimgr.example.com/api/portal/v1.4",
+              "AXWAY_MANAGER_USERNAME": "apiadmin",
+              "AXWAY_MANAGER_PASSWORD": "replace-me"
+            }
+          }
+        }
+      }
+    },
+    "antigravity": {
+      "fileLocation": ".agents/mcp_config.json (in workspace) or ~/.gemini/config/mcp_config.json (global)",
+      "content": {
+        "mcpServers": {
+          "axway-apim": {
+            "command": "node",
+            "args": ["C:/path/to/apim-mcp/build/index.js"],
+            "env": {
+              "TRANSPORT_MODE": "stdio",
+              "MCP_TOOL_PROFILE": "admin",
+              "AXWAY_TLS_REJECT_UNAUTHORIZED": "false",
+              "AXWAY_GATEWAY_URL": "https://anm.example.com/api",
+              "AXWAY_GATEWAY_USERNAME": "admin",
+              "AXWAY_GATEWAY_PASSWORD": "replace-me",
+              "AXWAY_MANAGER_URL": "https://apimgr.example.com/api/portal/v1.4",
+              "AXWAY_MANAGER_USERNAME": "apiadmin",
+              "AXWAY_MANAGER_PASSWORD": "replace-me"
+            }
+          }
+        }
+      }
+    },
+    "clineOrGeneric": {
+      "fileLocation": "cline_mcp_settings.json or vscode mcp configuration",
+      "content": {
+        "mcpServers": {
+          "axway-apim": {
+            "command": "node",
+            "args": ["/path/to/apim-mcp/build/index.js"],
+            "env": {
+              "TRANSPORT_MODE": "stdio",
+              "MCP_TOOL_PROFILE": "admin",
+              "AXWAY_TLS_REJECT_UNAUTHORIZED": "false",
+              "AXWAY_GATEWAY_URL": "https://anm.example.com/api",
+              "AXWAY_GATEWAY_USERNAME": "admin",
+              "AXWAY_GATEWAY_PASSWORD": "replace-me",
+              "AXWAY_MANAGER_URL": "https://apimgr.example.com/api/portal/v1.4",
+              "AXWAY_MANAGER_USERNAME": "apiadmin",
+              "AXWAY_MANAGER_PASSWORD": "replace-me"
+            }
+          }
+        }
+      }
+    }
+  }
+}

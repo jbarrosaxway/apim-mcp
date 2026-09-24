@@ -1,0 +1,764 @@
+[
+  {
+    "title": "Develop policies",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_poldev/index.html",
+    "file": "docs/rag/apigw_poldev.md",
+    "bytes": 2855
+  },
+  {
+    "title": "Develop in Policy Studio",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/index.html",
+    "file": "docs/rag/index.md",
+    "bytes": 1100
+  },
+  {
+    "title": "Get started with Policy Studio",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_poldev/gs_concepts/index.html",
+    "file": "docs/rag/apigw_poldev__gs_concepts.md",
+    "bytes": 17261
+  },
+  {
+    "title": "Policy Studio quick reference",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_poldev/general_project/index.html",
+    "file": "docs/rag/apigw_poldev__general_project.md",
+    "bytes": 6377
+  },
+  {
+    "title": "Create a Policy Studio project",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_poldev/gs_project/index.html",
+    "file": "docs/rag/apigw_poldev__gs_project.md",
+    "bytes": 8012
+  },
+  {
+    "title": "Get started with sample policies",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_poldev/sample_policies/index.html",
+    "file": "docs/rag/apigw_poldev__sample_policies.md",
+    "bytes": 17231
+  },
+  {
+    "title": "Configure policies",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_poldev/general_manual_policy/index.html",
+    "file": "docs/rag/apigw_poldev__general_manual_policy.md",
+    "bytes": 18171
+  },
+  {
+    "title": "Schedule policy execution",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_poldev/general_cron_schedule/index.html",
+    "file": "docs/rag/apigw_poldev__general_cron_schedule.md",
+    "bytes": 14933
+  },
+  {
+    "title": "Configure messaging services",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_poldev/general_messaging/index.html",
+    "file": "docs/rag/apigw_poldev__general_messaging.md",
+    "bytes": 18352
+  },
+  {
+    "title": "Configure caching",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_poldev/general_cache/index.html",
+    "file": "docs/rag/apigw_poldev__general_cache.md",
+    "bytes": 17542
+  },
+  {
+    "title": "Configure Key Property Store data",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_poldev/general_kps/index.html",
+    "file": "docs/rag/apigw_poldev__general_kps.md",
+    "bytes": 9816
+  },
+  {
+    "title": "Configure system alerts",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_poldev/general_system_alerts/index.html",
+    "file": "docs/rag/apigw_poldev__general_system_alerts.md",
+    "bytes": 11629
+  },
+  {
+    "title": "Import and export API Gateway configuration",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_poldev/general_import/index.html",
+    "file": "docs/rag/apigw_poldev__general_import.md",
+    "bytes": 8461
+  },
+  {
+    "title": "Compare and merge API Gateway configurations",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_poldev/merge_and_compare/index.html",
+    "file": "docs/rag/apigw_poldev__merge_and_compare.md",
+    "bytes": 3876
+  },
+  {
+    "title": "Upgrade log analysis",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_poldev/upgrade_log_analysis_ps/index.html",
+    "file": "docs/rag/apigw_poldev__upgrade_log_analysis_ps.md",
+    "bytes": 13541
+  },
+  {
+    "title": "Select configuration values at runtime",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_poldev/general_selector/index.html",
+    "file": "docs/rag/apigw_poldev__general_selector.md",
+    "bytes": 6961
+  },
+  {
+    "title": "Policy Studio preferences and options",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_poldev/general_ps_settings/index.html",
+    "file": "docs/rag/apigw_poldev__general_ps_settings.md",
+    "bytes": 15609
+  },
+  {
+    "title": "Compliance validation tools",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_poldev/general_validation_tools/index.html",
+    "file": "docs/rag/apigw_poldev__general_validation_tools.md",
+    "bytes": 1988
+  },
+  {
+    "title": "Configure Oracle SSM and Kerberos settings",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_poldev/security_server_settings/index.html",
+    "file": "docs/rag/apigw_poldev__security_server_settings.md",
+    "bytes": 13122
+  },
+  {
+    "title": "Integrate with TIBCO Rendezvous",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_poldev/connector_tibco_integration/index.html",
+    "file": "docs/rag/apigw_poldev__connector_tibco_integration.md",
+    "bytes": 6692
+  },
+  {
+    "title": "Register and secure web services",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_web_services/index.html",
+    "file": "docs/rag/apigw_web_services.md",
+    "bytes": 3481
+  },
+  {
+    "title": "Configure policies from WSDL files",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_web_services/general_policy_wsdl/index.html",
+    "file": "docs/rag/apigw_web_services__general_policy_wsdl.md",
+    "bytes": 24703
+  },
+  {
+    "title": "Manage web services",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_web_services/general_ws_repository/index.html",
+    "file": "docs/rag/apigw_web_services__general_ws_repository.md",
+    "bytes": 15992
+  },
+  {
+    "title": "Manage WSDL and XML schema documents",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_web_services/general_schema_cache/index.html",
+    "file": "docs/rag/apigw_web_services__general_schema_cache.md",
+    "bytes": 18241
+  },
+  {
+    "title": "Manage data maps",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_web_services/resources_data_maps/index.html",
+    "file": "docs/rag/apigw_web_services__resources_data_maps.md",
+    "bytes": 7310
+  },
+  {
+    "title": "Expose a web service as a REST API",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_web_services/mapper_soap_to_rest/index.html",
+    "file": "docs/rag/apigw_web_services__mapper_soap_to_rest.md",
+    "bytes": 5405
+  },
+  {
+    "title": "Develop REST APIs in Policy Studio",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_web_services/register_rest_apis/index.html",
+    "file": "docs/rag/apigw_web_services__register_rest_apis.md",
+    "bytes": 13245
+  },
+  {
+    "title": "Work with a UDDI registry",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_web_services/general_uddi/index.html",
+    "file": "docs/rag/apigw_web_services__general_uddi.md",
+    "bytes": 43642
+  },
+  {
+    "title": "WS-Policy reference",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_web_services/ws_policies_ref/index.html",
+    "file": "docs/rag/apigw_web_services__ws_policies_ref.md",
+    "bytes": 6502
+  },
+  {
+    "title": "Configure API Gateway instances and listeners",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_gw_instances/index.html",
+    "file": "docs/rag/apigw_gw_instances.md",
+    "bytes": 3300
+  },
+  {
+    "title": "Configure HTTP services",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_gw_instances/general_services/index.html",
+    "file": "docs/rag/apigw_gw_instances__general_services.md",
+    "bytes": 43534
+  },
+  {
+    "title": "Configure relative paths",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_gw_instances/general_relative_path/index.html",
+    "file": "docs/rag/apigw_gw_instances__general_relative_path.md",
+    "bytes": 26614
+  },
+  {
+    "title": "Configure remote host settings",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_gw_instances/general_remote_hosts/index.html",
+    "file": "docs/rag/apigw_gw_instances__general_remote_hosts.md",
+    "bytes": 19417
+  },
+  {
+    "title": "Configure virtual hosts",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_gw_instances/general_virtual_hosts/index.html",
+    "file": "docs/rag/apigw_gw_instances__general_virtual_hosts.md",
+    "bytes": 4661
+  },
+  {
+    "title": "Configure WebSocket connections",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_gw_instances/general_websocket/index.html",
+    "file": "docs/rag/apigw_gw_instances__general_websocket.md",
+    "bytes": 9982
+  },
+  {
+    "title": "Configure SMTP services",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_gw_instances/general_smtp_services/index.html",
+    "file": "docs/rag/apigw_gw_instances__general_smtp_services.md",
+    "bytes": 30179
+  },
+  {
+    "title": "Configure a file transfer service",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_gw_instances/general_file_transfer/index.html",
+    "file": "docs/rag/apigw_gw_instances__general_file_transfer.md",
+    "bytes": 14558
+  },
+  {
+    "title": "Configure an FTP poller",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_gw_instances/general_ftp_scanner/index.html",
+    "file": "docs/rag/apigw_gw_instances__general_ftp_scanner.md",
+    "bytes": 7950
+  },
+  {
+    "title": "Configure a directory scanner",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_gw_instances/general_directory_scanner/index.html",
+    "file": "docs/rag/apigw_gw_instances__general_directory_scanner.md",
+    "bytes": 6531
+  },
+  {
+    "title": "Configure a POP client",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_gw_instances/general_pop_client/index.html",
+    "file": "docs/rag/apigw_gw_instances__general_pop_client.md",
+    "bytes": 1858
+  },
+  {
+    "title": "Configure Amazon SQS queue listener",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_gw_instances/general_aws_poller/index.html",
+    "file": "docs/rag/apigw_gw_instances__general_aws_poller.md",
+    "bytes": 6558
+  },
+  {
+    "title": "Cryptographic acceleration",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_gw_instances/general_crypto_accel/index.html",
+    "file": "docs/rag/apigw_gw_instances__general_crypto_accel.md",
+    "bytes": 6727
+  },
+  {
+    "title": "Configure Cross-Origin Resource Sharing",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_gw_instances/general_cors/index.html",
+    "file": "docs/rag/apigw_gw_instances__general_cors.md",
+    "bytes": 7742
+  },
+  {
+    "title": "Compressed content encoding",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_gw_instances/common_compress_encoding/index.html",
+    "file": "docs/rag/apigw_gw_instances__common_compress_encoding.md",
+    "bytes": 7600
+  },
+  {
+    "title": "Configure HTTP Strict Transport Security",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_gw_instances/configure_http_strict_transport_security/index.html",
+    "file": "docs/rag/apigw_gw_instances__configure_http_strict_transport_security.md",
+    "bytes": 2663
+  },
+  {
+    "title": "Configure external connections",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_external_connections/index.html",
+    "file": "docs/rag/apigw_external_connections.md",
+    "bytes": 2918
+  },
+  {
+    "title": "Configure authentication repositories",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_external_connections/common_user_store/index.html",
+    "file": "docs/rag/apigw_external_connections__common_user_store.md",
+    "bytes": 25867
+  },
+  {
+    "title": "Configure client credentials",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_external_connections/common_client_credentials/index.html",
+    "file": "docs/rag/apigw_external_connections__common_client_credentials.md",
+    "bytes": 28183
+  },
+  {
+    "title": "Configure database connections",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_external_connections/common_db_conf/index.html",
+    "file": "docs/rag/apigw_external_connections__common_db_conf.md",
+    "bytes": 9998
+  },
+  {
+    "title": "Configure ICAP servers",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_external_connections/common_icap_conf/index.html",
+    "file": "docs/rag/apigw_external_connections__common_icap_conf.md",
+    "bytes": 6618
+  },
+  {
+    "title": "Configure Kerberos services",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_external_connections/kerberos_service/index.html",
+    "file": "docs/rag/apigw_external_connections__kerberos_service.md",
+    "bytes": 6077
+  },
+  {
+    "title": "Configure LDAP directories",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_external_connections/common_ldap_conf/index.html",
+    "file": "docs/rag/apigw_external_connections__common_ldap_conf.md",
+    "bytes": 6946
+  },
+  {
+    "title": "Configure proxy servers",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_external_connections/common_proxy_server/index.html",
+    "file": "docs/rag/apigw_external_connections__common_proxy_server.md",
+    "bytes": 1637
+  },
+  {
+    "title": "Configure RADIUS clients",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_external_connections/common_radius_client/index.html",
+    "file": "docs/rag/apigw_external_connections__common_radius_client.md",
+    "bytes": 2073
+  },
+  {
+    "title": "Configure Sentinel servers",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_external_connections/common_sentinel/index.html",
+    "file": "docs/rag/apigw_external_connections__common_sentinel.md",
+    "bytes": 1854
+  },
+  {
+    "title": "Configure SMTP servers",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_external_connections/common_smtp_server/index.html",
+    "file": "docs/rag/apigw_external_connections__common_smtp_server.md",
+    "bytes": 1929
+  },
+  {
+    "title": "Configure Syslog servers",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_external_connections/common_syslog_server/index.html",
+    "file": "docs/rag/apigw_external_connections__common_syslog_server.md",
+    "bytes": 1120
+  },
+  {
+    "title": "Configure Tivoli connections",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_external_connections/connector_tivoli_connection/index.html",
+    "file": "docs/rag/apigw_external_connections__connector_tivoli_connection.md",
+    "bytes": 3448
+  },
+  {
+    "title": "Configure XKMS connections",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_external_connections/certificate_xkms_connection/index.html",
+    "file": "docs/rag/apigw_external_connections__certificate_xkms_connection.md",
+    "bytes": 1847
+  },
+  {
+    "title": "Configure connection groups and URL groups",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_external_connections/common_connection_groups/index.html",
+    "file": "docs/rag/apigw_external_connections__common_connection_groups.md",
+    "bytes": 5569
+  },
+  {
+    "title": "Configure OAuth",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_oauth/index.html",
+    "file": "docs/rag/apigw_oauth.md",
+    "bytes": 2471
+  },
+  {
+    "title": "OAuth and OpenID Connect concepts",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_oauth/oauth_openid_concepts/index.html",
+    "file": "docs/rag/apigw_oauth__oauth_openid_concepts.md",
+    "bytes": 5385
+  },
+  {
+    "title": "API Gateway OAuth 2.0 authentication flows",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_oauth/oauth_flows/index.html",
+    "file": "docs/rag/apigw_oauth__oauth_flows.md",
+    "bytes": 3022
+  },
+  {
+    "title": "Authorization code grant (or web server) flow",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_oauth/oauth_flows/oauth_flows_auth_code/index.html",
+    "file": "docs/rag/apigw_oauth__oauth_flows__oauth_flows_auth_code.md",
+    "bytes": 8654
+  },
+  {
+    "title": "Implicit grant (or user agent) flow",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_oauth/oauth_flows/oauth_flows_user_agent/index.html",
+    "file": "docs/rag/apigw_oauth__oauth_flows__oauth_flows_user_agent.md",
+    "bytes": 5881
+  },
+  {
+    "title": "Resource owner password credentials flow",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_oauth/oauth_flows/oauth_flows_resource_owner/index.html",
+    "file": "docs/rag/apigw_oauth__oauth_flows__oauth_flows_resource_owner.md",
+    "bytes": 4148
+  },
+  {
+    "title": "Client credentials grant flow",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_oauth/oauth_flows/oauth_flows_client_credentials/index.html",
+    "file": "docs/rag/apigw_oauth__oauth_flows__oauth_flows_client_credentials.md",
+    "bytes": 3749
+  },
+  {
+    "title": "JWT flow",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_oauth/oauth_flows/oauth_flows_jwt/index.html",
+    "file": "docs/rag/apigw_oauth__oauth_flows__oauth_flows_jwt.md",
+    "bytes": 5244
+  },
+  {
+    "title": "Revoke token flow",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_oauth/oauth_flows/oauth_flows_revoke_token/index.html",
+    "file": "docs/rag/apigw_oauth__oauth_flows__oauth_flows_revoke_token.md",
+    "bytes": 3008
+  },
+  {
+    "title": "Token information service flow",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_oauth/oauth_flows/oauth_flows_token_info/index.html",
+    "file": "docs/rag/apigw_oauth__oauth_flows__oauth_flows_token_info.md",
+    "bytes": 2685
+  },
+  {
+    "title": "Set up API Gateway OAuth server",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_oauth/gw_server/index.html",
+    "file": "docs/rag/apigw_oauth__gw_server.md",
+    "bytes": 2643
+  },
+  {
+    "title": "API Gateway as an OAuth 2.0 server",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_oauth/gw_oauth_server/index.html",
+    "file": "docs/rag/apigw_oauth__gw_oauth_server.md",
+    "bytes": 5409
+  },
+  {
+    "title": "API Gateway as an OAuth 2.0 authorization server",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_oauth/gw_oauth_authz_server/index.html",
+    "file": "docs/rag/apigw_oauth__gw_oauth_authz_server.md",
+    "bytes": 6737
+  },
+  {
+    "title": "OAuth authorization server filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_oauth/authz_server_filters/index.html",
+    "file": "docs/rag/apigw_oauth__authz_server_filters.md",
+    "bytes": 43515
+  },
+  {
+    "title": "API Gateway as an OAuth 2.0 resource server",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_oauth/gw_oauth_resource_server/index.html",
+    "file": "docs/rag/apigw_oauth__gw_oauth_resource_server.md",
+    "bytes": 12355
+  },
+  {
+    "title": "OAuth resource server filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_oauth/resource_server_filters/index.html",
+    "file": "docs/rag/apigw_oauth__resource_server_filters.md",
+    "bytes": 5318
+  },
+  {
+    "title": "API Manager as an OAuth 2.0 resource server",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_oauth/apimgr_oauth_resource_server/index.html",
+    "file": "docs/rag/apigw_oauth__apimgr_oauth_resource_server.md",
+    "bytes": 7152
+  },
+  {
+    "title": "Set up API Gateway OAuth client",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_oauth/gw_client_demo/index.html",
+    "file": "docs/rag/apigw_oauth__gw_client_demo.md",
+    "bytes": 6450
+  },
+  {
+    "title": "API Gateway as an OAuth 2.0 client",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_oauth/gw_oauth_client/index.html",
+    "file": "docs/rag/apigw_oauth__gw_oauth_client.md",
+    "bytes": 22598
+  },
+  {
+    "title": "OAuth client filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_oauth/oauth_client_filters/index.html",
+    "file": "docs/rag/apigw_oauth__oauth_client_filters.md",
+    "bytes": 9485
+  },
+  {
+    "title": "API Gateway and OpenID Connect",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_oauth/oauth_openid/index.html",
+    "file": "docs/rag/apigw_oauth__oauth_openid.md",
+    "bytes": 11485
+  },
+  {
+    "title": "OpenID Connect filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_oauth/oauth_openid_filters/index.html",
+    "file": "docs/rag/apigw_oauth__oauth_openid_filters.md",
+    "bytes": 4409
+  },
+  {
+    "title": "OAuth message attributes",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_oauth/oauth_message_attributes/index.html",
+    "file": "docs/rag/apigw_oauth__oauth_message_attributes.md",
+    "bytes": 11836
+  },
+  {
+    "title": "Configure Key Property Store",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_kps/index.html",
+    "file": "docs/rag/apigw_kps.md",
+    "bytes": 1085
+  },
+  {
+    "title": "KPS overview",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_kps/introduction/index.html",
+    "file": "docs/rag/apigw_kps__introduction.md",
+    "bytes": 4172
+  },
+  {
+    "title": "Get started with KPS",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_kps/get_started/index.html",
+    "file": "docs/rag/apigw_kps__get_started.md",
+    "bytes": 5302
+  },
+  {
+    "title": "Configure KPS in Policy Studio",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_kps/kps_configuration/index.html",
+    "file": "docs/rag/apigw_kps__kps_configuration.md",
+    "bytes": 9757
+  },
+  {
+    "title": "Manage KPS using kpsadmin",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_kps/how_to_use_kpsadmin_command/index.html",
+    "file": "docs/rag/apigw_kps__how_to_use_kpsadmin_command.md",
+    "bytes": 17236
+  },
+  {
+    "title": "Configure database storage",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_kps/configure_database_storage/index.html",
+    "file": "docs/rag/apigw_kps__configure_database_storage.md",
+    "bytes": 13283
+  },
+  {
+    "title": "Use the KPS scripting API",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_kps/kps_script_api/index.html",
+    "file": "docs/rag/apigw_kps__kps_script_api.md",
+    "bytes": 6002
+  },
+  {
+    "title": "KPS FAQ",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_kps/kps_faq/index.html",
+    "file": "docs/rag/apigw_kps__kps_faq.md",
+    "bytes": 5661
+  },
+  {
+    "title": "Troubleshoot KPS error messages",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_kps/troubleshooting/index.html",
+    "file": "docs/rag/apigw_kps__troubleshooting.md",
+    "bytes": 707
+  },
+  {
+    "title": "Policy filter reference",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/index.html",
+    "file": "docs/rag/apigw_polref.md",
+    "bytes": 4038
+  },
+  {
+    "title": "Get started with routing configuration",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/routing_getstarted/index.html",
+    "file": "docs/rag/apigw_polref__routing_getstarted.md",
+    "bytes": 14976
+  },
+  {
+    "title": "Routing filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/routing_common/index.html",
+    "file": "docs/rag/apigw_polref__routing_common.md",
+    "bytes": 23700
+  },
+  {
+    "title": "Route to JMS",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/routing_jms/index.html",
+    "file": "docs/rag/apigw_polref__routing_jms.md",
+    "bytes": 14185
+  },
+  {
+    "title": "Additional routing filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/routing_additional/index.html",
+    "file": "docs/rag/apigw_polref__routing_additional.md",
+    "bytes": 27082
+  },
+  {
+    "title": "Attribute filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/attributes_manipulate/index.html",
+    "file": "docs/rag/apigw_polref__attributes_manipulate.md",
+    "bytes": 29511
+  },
+  {
+    "title": "Retrieve attribute filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/attributes_retrieve/index.html",
+    "file": "docs/rag/apigw_polref__attributes_retrieve.md",
+    "bytes": 38504
+  },
+  {
+    "title": "Authentication filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/authn_common/index.html",
+    "file": "docs/rag/apigw_polref__authn_common.md",
+    "bytes": 95601
+  },
+  {
+    "title": "Additional authentication filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/authn_additional/index.html",
+    "file": "docs/rag/apigw_polref__authn_additional.md",
+    "bytes": 19049
+  },
+  {
+    "title": "Authorization filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/authz_common/index.html",
+    "file": "docs/rag/apigw_polref__authz_common.md",
+    "bytes": 34622
+  },
+  {
+    "title": "Additional authorization filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/authz_other/index.html",
+    "file": "docs/rag/apigw_polref__authz_other.md",
+    "bytes": 29489
+  },
+  {
+    "title": "Conversion filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/conversion_common/index.html",
+    "file": "docs/rag/apigw_polref__conversion_common.md",
+    "bytes": 33783
+  },
+  {
+    "title": "Additional conversion filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/conversion_additional/index.html",
+    "file": "docs/rag/apigw_polref__conversion_additional.md",
+    "bytes": 17179
+  },
+  {
+    "title": "Throttling filter",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/content_max_messages/index.html",
+    "file": "docs/rag/apigw_polref__content_max_messages.md",
+    "bytes": 12270
+  },
+  {
+    "title": "Content filtering filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/content_common/index.html",
+    "file": "docs/rag/apigw_polref__content_common.md",
+    "bytes": 57763
+  },
+  {
+    "title": "Additional content filtering filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/content_additional/index.html",
+    "file": "docs/rag/apigw_polref__content_additional.md",
+    "bytes": 15553
+  },
+  {
+    "title": "Virus scanning filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/virus_scanning/index.html",
+    "file": "docs/rag/apigw_polref__virus_scanning.md",
+    "bytes": 3231
+  },
+  {
+    "title": "Certificate validation filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/cert_validation/index.html",
+    "file": "docs/rag/apigw_polref__cert_validation.md",
+    "bytes": 36638
+  },
+  {
+    "title": "Caching filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/caching/index.html",
+    "file": "docs/rag/apigw_polref__caching.md",
+    "bytes": 6956
+  },
+  {
+    "title": "Fault and error handling filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/fault_filters/index.html",
+    "file": "docs/rag/apigw_polref__fault_filters.md",
+    "bytes": 18202
+  },
+  {
+    "title": "AWS filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/aws_filters/index.html",
+    "file": "docs/rag/apigw_polref__aws_filters.md",
+    "bytes": 4676
+  },
+  {
+    "title": "Monitoring and logging filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/monitoring_logging/index.html",
+    "file": "docs/rag/apigw_polref__monitoring_logging.md",
+    "bytes": 36867
+  },
+  {
+    "title": "Encryption and decryption filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/encryption_common/index.html",
+    "file": "docs/rag/apigw_polref__encryption_common.md",
+    "bytes": 13014
+  },
+  {
+    "title": "XML encryption filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/encryption_xml/index.html",
+    "file": "docs/rag/apigw_polref__encryption_xml.md",
+    "bytes": 39079
+  },
+  {
+    "title": "Additional encryption filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/encryption_additional/index.html",
+    "file": "docs/rag/apigw_polref__encryption_additional.md",
+    "bytes": 10004
+  },
+  {
+    "title": "XML integrity filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/integrity_xml/index.html",
+    "file": "docs/rag/apigw_polref__integrity_xml.md",
+    "bytes": 58661
+  },
+  {
+    "title": "Additional integrity filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/integrity_additional/index.html",
+    "file": "docs/rag/apigw_polref__integrity_additional.md",
+    "bytes": 27053
+  },
+  {
+    "title": "Resolver filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/resolver_filters/index.html",
+    "file": "docs/rag/apigw_polref__resolver_filters.md",
+    "bytes": 4294
+  },
+  {
+    "title": "Web service filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/web_services/index.html",
+    "file": "docs/rag/apigw_polref__web_services.md",
+    "bytes": 17263
+  },
+  {
+    "title": "WS-Trust filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/wstrust_filters/index.html",
+    "file": "docs/rag/apigw_polref__wstrust_filters.md",
+    "bytes": 12673
+  },
+  {
+    "title": "Utility filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/utility_common/index.html",
+    "file": "docs/rag/apigw_polref__utility_common.md",
+    "bytes": 10772
+  },
+  {
+    "title": "Additional utility filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/utility_additional/index.html",
+    "file": "docs/rag/apigw_polref__utility_additional.md",
+    "bytes": 36679
+  },
+  {
+    "title": "Security service filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/sec_services/index.html",
+    "file": "docs/rag/apigw_polref__sec_services.md",
+    "bytes": 5828
+  },
+  {
+    "title": "Oracle Entitlements Server filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/connector_oes11g10g/index.html",
+    "file": "docs/rag/apigw_polref__connector_oes11g10g.md",
+    "bytes": 6215
+  },
+  {
+    "title": "API management filters",
+    "url": "https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/apigw_polref/api_mgr_ps_filters/index.html",
+    "file": "docs/rag/apigw_polref__api_mgr_ps_filters.md",
+    "bytes": 7130
+  }
+]

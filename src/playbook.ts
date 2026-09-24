@@ -38,7 +38,7 @@ Recuperar evidência live (MCP tools) + **FED deployado** via ANM. Decompilaçã
 - \`returnBase64\` — default true sem \`savePath\`; devolve base64 até 8 MB para agentes remotos
 
 ## Após o FED (agente chamador, não MCP)
-- Extrair: \`unzip\` ou \`.cursor/skills/apim-gateway-code-analysis/scripts/extract-fed.sh\`
+- Extrair: \`unzip\` ou \`skills/apim-gateway-code-analysis/scripts/extract-fed.sh\` (ou \`.cursor/skills/...\`)
 - Correlacionar invoke/routing do \`proxy_get\` com filtros no FED
 - Decompile seletivo: \`find-in-jars.py\`, \`decompile-classes.sh\` + CFR/JARs \`system/lib/\` da versão da topologia
 
@@ -51,16 +51,16 @@ export const POLICY_DEVELOPMENT_PLAYBOOK_FALLBACK = `# Axway Policy Development 
 ## Objetivo
 Desenvolver policies no Policy Studio (filters, listeners, OAuth, KPS, fragments YAML/XML) usando a skill \`apim-policy-development\` e o corpus RAG em \`docs/rag/\`.
 
-## Bootstrap — ambiente Cursor para autorar policies
-1. No repo **apim-mcp**: \`scripts/install-policy-dev-skills.ps1 -TargetWorkspace <apim-policies> -Force\` (copia skill+RAG+rule; opcional \`-Scope Global\`, \`-Mode Junction\`).
-2. Confirmar MCP Axway em \`.cursor/mcp.json\` (snippet gerado se necessário).
+## Bootstrap — ambiente para autorar policies
+1. No repo **apim-mcp**: \`scripts/install-policy-dev-skills.ps1 -TargetWorkspace <apim-policies> -Platform All -Force\` (copia skill+RAG+rule; opcional \`-Scope Global\`, \`-Mode Junction\`).
+2. Confirmar MCP Axway em \`mcp.json\` / \`.cursor/mcp.json\` (snippet gerado se necessário).
 3. Anexar este resource (\`axway://apim/playbook/policy-development\`) ou prompt \`axway_apim_policy_develop\`.
 4. Políticas reais: repo **apim-policies** — validar com \`axway_apim_fragment_validate_submit\`. Não copiar policies client-specific para o MCP.
-Docs: \`docs/pt-BR/instalar-skills-policy-dev.md\`.
+Docs: \`docs/pt-BR/instalar-skills-policy-dev.md\` / \`docs/en/install-policy-dev-skills.md\`.
 
 ## Ordem
 1. Clarificar objetivo (alert Send, HTTP Receive, lookup local APIM, routing)
-2. Abrir páginas RAG (\`axway://apim/docs/policydev/{slug}\` ou ficheiros em \`.cursor/skills/apim-policy-development/docs/rag/\`)
+2. Abrir páginas RAG (\`axway://apim/docs/policydev/{slug}\` ou ficheiros em \`skills/apim-policy-development/docs/rag/\`)
 3. Preferir filtros **API Management Read *** para leituras locais do registry
 4. Autor YAML/XML fragment; validar (checklist → yamles → PS import → MCP). Ver skill secção «Configuration Fragment importável».
 
@@ -128,23 +128,29 @@ Abrir o workspace **apim-policies** para scripts de validação, deploy e detalh
 
 ## Docs
 Fonte: https://docs.axway.com/bundle/axway-open-docs/page/docs/apim_policydev/index.html
-Manifest RAG: \`.cursor/skills/apim-policy-development/docs/rag/_manifest.md\`
+Manifest RAG: \`skills/apim-policy-development/docs/rag/_manifest.md\`
 
 ## Prompt
 \`axway_apim_policy_develop\`
 `;
 
 const GATEWAY_PLAYBOOK_CANDIDATES = [
+  path.join(process.cwd(), "skills/apim-gateway-code-analysis/SKILL.md"),
+  path.join(moduleDir, "..", "skills/apim-gateway-code-analysis/SKILL.md"),
   path.join(process.cwd(), ".cursor/skills/apim-gateway-code-analysis/SKILL.md"),
   path.join(moduleDir, "..", ".cursor/skills/apim-gateway-code-analysis/SKILL.md"),
 ];
 
 const POLICY_PLAYBOOK_CANDIDATES = [
+  path.join(process.cwd(), "skills/apim-policy-development/SKILL.md"),
+  path.join(moduleDir, "..", "skills/apim-policy-development/SKILL.md"),
   path.join(process.cwd(), ".cursor/skills/apim-policy-development/SKILL.md"),
   path.join(moduleDir, "..", ".cursor/skills/apim-policy-development/SKILL.md"),
 ];
 
 const POLICY_RAG_DIRS = [
+  path.join(process.cwd(), "skills/apim-policy-development/docs/rag"),
+  path.join(moduleDir, "..", "skills/apim-policy-development/docs/rag"),
   path.join(process.cwd(), ".cursor/skills/apim-policy-development/docs/rag"),
   path.join(moduleDir, "..", ".cursor/skills/apim-policy-development/docs/rag"),
 ];

@@ -15,15 +15,19 @@ description: >-
 
 Playbook for agents building or changing **API Gateway policies** with Axway docs RAG + this repo’s fragment patterns.
 
-## Bootstrap (outro workspace Cursor)
+## Bootstrap (outro workspace / agente)
 
-Se a skill ainda não estiver no workspace alvo (ex. **apim-policies**), no repo **apim-mcp**:
+Se a skill ainda não estiver no workspace alvo (ex. **apim-policies**), execute no repo **apim-mcp**:
 
 ```powershell
-powershell -File scripts/install-policy-dev-skills.ps1 -TargetWorkspace "<path-apim-policies>" -Force
+powershell -File scripts/install-policy-dev-skills.ps1 -TargetWorkspace "<path-apim-policies>" -Platform All -Force
+```
+Ou no Linux/macOS:
+```bash
+./scripts/install-policy-dev-skills.sh -TargetWorkspace "/path/to/apim-policies" -Platform All -Force
 ```
 
-Docs: `docs/pt-BR/instalar-skills-policy-dev.md`. Anexar sempre `axway://apim/playbook/policy-development` quando o MCP estiver ligado.
+Docs: `docs/pt-BR/instalar-skills-policy-dev.md` / `docs/en/install-policy-dev-skills.md`. Anexar sempre `axway://apim/playbook/policy-development` quando o MCP estiver conectado.
 
 ## When to load
 
@@ -46,7 +50,7 @@ Local mirror of [Develop in Policy Studio](https://docs.axway.com/bundle/axway-o
 1. Open `_manifest.md`, pick the page(s) matching the task.
 2. `Read` those `.md` files — treat body text as the product documentation.
 3. Cite the `source:` URL when answering the user.
-4. Re-scrape if docs may be stale: `node .cursor/skills/apim-policy-development/scripts/crawl-policydev-docs.mjs`
+4. Re-scrape if docs may be stale: `node skills/apim-policy-development/scripts/crawl-policydev-docs.mjs` (ou `.cursor/skills/...`)
 
 ## MCP exposure
 

@@ -1,8 +1,8 @@
 # Install policy-development skills
 
-Prepare a workspace (Cursor, Claude Code, Copilot, Windsurf, VS Code agents, etc.) to **author Axway policies** using this MCP without copying client-specific policies into `apim-mcp`.
+Prepare a workspace (Cursor, Google Antigravity, Claude Code, Copilot, Windsurf, Cline, VS Code agents, etc.) to **author Axway policies** using this MCP without copying client-specific policies into `apim-mcp`.
 
-The **markdown skill** (`SKILL.md` + RAG) is the source of truth. Each platform only gets copies/pointers in the right place. Axway MCP is **optional** for live tools; skill+RAG work offline.
+The **markdown skill** (`SKILL.md` + RAG) is the source of truth, located canonically in `skills/` (and mirrored in `.cursor/skills/`). Each platform gets copies/pointers in the proper directory. Axway MCP is **optional** for live tools; skill+RAG work offline.
 
 ## Options
 
@@ -16,12 +16,13 @@ The **markdown skill** (`SKILL.md` + RAG) is the source of truth. Each platform 
 
 | Value | Destinations |
 |-------|----------------|
-| **All** (default) | Cursor + Claude + Generic |
+| **All** (default) | Cursor + Claude + Antigravity + Generic |
 | **Cursor** | `.cursor/skills`, `.cursor/rules/*.mdc`, MCP snippet under `.cursor/` |
 | **Claude** | `.claude/skills`, `.claude/apim-policy-dev.md`, `CLAUDE.md` if missing |
-| **Generic** | `agent-skills/`, `POLICY_DEV.md`, `AGENTS.md` if missing (workspace) |
+| **Antigravity** | `.agents/skills` (workspace) or `~/.gemini/config/skills` (global), MCP snippet under `.agents/` |
+| **Generic** | `skills/`, `POLICY_DEV.md`, `AGENTS.md` if missing (workspace) |
 
-Comma-separated lists work: `-Platform Cursor,Generic`.
+Comma-separated lists work: `-Platform Cursor,Antigravity,Generic`.
 
 ## Steps (option A)
 

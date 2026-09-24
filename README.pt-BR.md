@@ -4,13 +4,15 @@ Languages: [English](README.md) | [Português (Brasil)](README.pt-BR.md)
 
 **Versão:** `1.0.17-axway-std`
 
-Servidor [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) em **Node.js / TypeScript** para administrar e monitorar ambientes **Axway API Gateway (ANM)** e **API Manager** a partir de clientes como o **Cursor**.
+Servidor [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) em **Node.js / TypeScript** para administrar e monitorar ambientes **Axway API Gateway (ANM)** e **API Manager** a partir de clientes de IA como **Cursor, Google Antigravity, Claude Code, Cline, Windsurf** e outras ferramentas habilitadas para MCP.
 
 | Guia | Conteúdo |
 |------|----------|
-| **[docs/pt-BR/guia-fim-a-fim.md](docs/pt-BR/guia-fim-a-fim.md)** | Instalar, configurar Axway + OIDC e autenticar no Cursor |
-| **[docs/pt-BR/instalar-skills-policy-dev.md](docs/pt-BR/instalar-skills-policy-dev.md)** | Instalar skills de policy-dev (Cursor/Claude/genérico) para **criar políticas** (repo `apim-policies`) |
+| **[docs/pt-BR/guia-fim-a-fim.md](docs/pt-BR/guia-fim-a-fim.md)** | Instalar, configurar Axway + OIDC e autenticar em clientes MCP |
+| **[skills/README.md](skills/README.md)** | Skills multi-agente (`apim-policy-development` + `apim-gateway-code-analysis`) |
+| **[docs/pt-BR/instalar-skills-policy-dev.md](docs/pt-BR/instalar-skills-policy-dev.md)** | Instalar skills de policy-dev em workspaces externos (`apim-policies`) |
 | **[docs/pt-BR/oidc-idps.md](docs/pt-BR/oidc-idps.md)** | Conectar Keycloak, Entra ID, Okta, Auth0 (ou outro OIDC) |
+| **[mcp.json.example](mcp.json.example)** | Exemplos de configuração multi-cliente (Cursor, Claude, Antigravity, Cline) |
 | **[helm/axway-mcp/](helm/axway-mcp/)** | Chart Kubernetes (Secret obrigatório para users/senhas Axway) |
 
 Índice completo: [docs/README.md](docs/README.md).
@@ -161,9 +163,41 @@ Passos completos (OIDC no IdP, Cursor, smoke tests): **[docs/pt-BR/guia-fim-a-fi
 
 ---
 
-## Cursor (cliente MCP)
+## Skills para Agentes de IA (`skills/`)
 
-**Remoto (OIDC):**
+As skills canônicas para agentes e o corpus RAG de documentação vivem na pasta [`skills/`](skills/):
+
+| Skill | Objetivo | Ponto de Entrada |
+|-------|----------|------------------|
+| **`apim-policy-development`** | Desenvolvimento de policies no Policy Studio, desenho de filtros, fragments YAML/XML, RAG local em `docs/rag/`. | `skills/apim-policy-development/SKILL.md` |
+| **`apim-gateway-code-analysis`** | Análise forense de arquivos FED (`.fed`), configurações de ambiente e descompilação de JARs. | `skills/apim-gateway-code-analysis/SKILL.md` |
+
+### Como Diferentes Agentes Descobrem as Skills
+
+- **Cursor:** Carrega automaticamente de `.cursor/skills/` (espelhado de `skills/`) com regras em `.cursor/rules/`.
+- **Google Antigravity:** Carrega de `.agents/skills/` (workspace) ou `~/.gemini/config/skills/` (global), ou lê diretamente de `skills/`.
+- **Claude Code:** Carrega de `.claude/skills/` ou referenciado em `CLAUDE.md`.
+- **Cline / Roo Code / Windsurf:** Carrega diretamente de `skills/` usando as instruções em `AGENTS.md`.
+
+Para instalar as skills noutro workspace (ex. `apim-policies`):
+```bash
+# Windows
+powershell -File scripts/install-policy-dev-skills.ps1 -TargetWorkspace "C:\caminho\para\apim-policies" -Platform All -Force
+
+# Linux / macOS
+./scripts/install-policy-dev-skills.sh -TargetWorkspace "$HOME/apim-policies" -Platform All -Force
+```
+Consulte **[skills/README.md](skills/README.md)** para a documentação completa.
+
+---
+
+## Configuração de Clientes MCP
+
+Veja **[`mcp.json.example`](mcp.json.example)** para exemplos de configuração detalhados para Cursor, Claude Desktop, Google Antigravity e Cline.
+
+### Remoto (HTTP + OIDC)
+
+Exemplo de configuração para Cursor / clientes genéricos:
 
 ```json
 {
@@ -179,11 +213,33 @@ Passos completos (OIDC no IdP, Cursor, smoke tests): **[docs/pt-BR/guia-fim-a-fi
 }
 ```
 
-Não é preciso pedir `mcp:*` no Cursor: o Keycloak inclui o scope MCP conforme a **role** do user (`mcp-observe` / `mcp-operator` / `mcp-admin`).
+O Keycloak/IdP inclui automaticamente o scope MCP conforme a **role** do user (`mcp-observe` / `mcp-operator` / `mcp-admin`).
 
-Settings → Tools & MCP → **Connect** → login no IdP.
+### Local (stdio)
 
-**Local (stdio):** ver [`.cursor/mcp.json`](.cursor/mcp.json). Opcional: `MCP_TOOL_PROFILE=observe` no `env` do servidor.
+Exemplo para desenvolvimento local:
+```json
+{
+  "mcpServers": {
+    "Axway MCP (stdio)": {
+      "command": "node",
+      "args": ["C:/caminho/para/apim-mcp/build/index.js"],
+      "env": {
+        "TRANSPORT_MODE": "stdio",
+        "MCP_TOOL_PROFILE": "admin",
+        "AXWAY_TLS_REJECT_UNAUTHORIZED": "false",
+        "AXWAY_GATEWAY_URL": "https://anm.example.com/api",
+        "AXWAY_GATEWAY_USERNAME": "admin",
+        "AXWAY_GATEWAY_PASSWORD": "replace-me",
+        "AXWAY_MANAGER_URL": "https://apimgr.example.com/api/portal/v1.4",
+        "AXWAY_MANAGER_USERNAME": "apiadmin",
+        "AXWAY_MANAGER_PASSWORD": "replace-me"
+      }
+    }
+  }
+}
+```
+Opcional: defina `MCP_TOOL_PROFILE=observe` no `env` do servidor para restringir a execução a operações apenas de leitura.
 
 ---
 

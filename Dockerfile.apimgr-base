@@ -34,8 +34,9 @@ COPY --from=builder /app/build ./build
 COPY --from=builder /app/resources/fragment ./resources/fragment
 COPY --from=builder /app/policies/README.md ./policies/README.md
 COPY --from=builder /app/config ./config
+COPY --from=builder /app/skills ./skills
 COPY --from=builder /app/.cursor/skills ./.cursor/skills
-RUN find ./.cursor/skills -type f -name '*.sh' -exec chmod +x {} \; 2>/dev/null || true
+RUN find ./skills ./.cursor/skills -type f -name '*.sh' -exec chmod +x {} \; 2>/dev/null || true
 
 # Scripts expect Linux.x86_64/bin; EMT images use posix/bin
 RUN if [ -d /opt/Axway/apigateway/posix/bin ] && [ ! -d /opt/Axway/apigateway/Linux.x86_64/bin ]; then \

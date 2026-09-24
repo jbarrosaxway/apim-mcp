@@ -12,5 +12,6 @@ Bilingual documentation for Axway APIM MCP review.
 | Audit report 1.0.17 | [en/axway-mcp-audit-1.0.17.md](en/axway-mcp-audit-1.0.17.md) | [pt-BR/axway-mcp-audit-1.0.17.md](pt-BR/axway-mcp-audit-1.0.17.md) |
 | Axway MCP standards (links) | [en/axway-mcp-standards.md](en/axway-mcp-standards.md) | [pt-BR/axway-mcp-standards.md](pt-BR/axway-mcp-standards.md) |
 | Implementation progress | [en/progress.md](en/progress.md) | [pt-BR/progresso.md](pt-BR/progresso.md) |
+| Agent skills overview | [skills/README.md](../skills/README.md) | [skills/README.md](../skills/README.md) |
 
 Project overview: [README.md](../README.md) · [README.pt-BR.md](../README.pt-BR.md)

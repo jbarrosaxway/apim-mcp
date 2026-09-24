@@ -1,8 +1,9 @@
 /**
  * Crawl Axway "Develop in Policy Studio" docs (apim_policydev) via Playwright.
- * Saves one .md per page under .cursor/skills/apim-policy-development/docs/rag/
+ * Saves one .md per page under docs/rag/ relative to this script.
  *
  * Usage:
+ *   node skills/apim-policy-development/scripts/crawl-policydev-docs.mjs
  *   node .cursor/skills/apim-policy-development/scripts/crawl-policydev-docs.mjs
  */
 import { chromium } from "playwright";

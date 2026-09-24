@@ -48,8 +48,9 @@ COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/build ./build
 
 # Skills (gateway-code-analysis scripts + policy-development RAG/playbook)
+COPY --from=builder /app/skills ./skills
 COPY --from=builder /app/.cursor/skills ./.cursor/skills
-RUN find ./.cursor/skills -type f -name '*.sh' -exec chmod +x {} \;
+RUN find ./skills ./.cursor/skills -type f -name '*.sh' -exec chmod +x {} \;
 
 # Muda a propriedade dos ficheiros para o nosso utilizador não-root
 RUN chown -R appuser:appgroup /app

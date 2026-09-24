@@ -36,7 +36,10 @@ param(
 $ErrorActionPreference = "Stop"
 
 $RepoRoot = Split-Path -Parent $PSScriptRoot
-$SourceSkillsRoot = Join-Path $RepoRoot ".cursor\skills"
+$SourceSkillsRoot = Join-Path $RepoRoot "skills"
+if (-not (Test-Path -LiteralPath $SourceSkillsRoot)) {
+  $SourceSkillsRoot = Join-Path $RepoRoot ".cursor\skills"
+}
 $BootstrapRoot = Join-Path $RepoRoot "resources\policy-dev-bootstrap"
 
 $SkillNames = @("apim-policy-development")
@@ -50,11 +53,12 @@ function Resolve-PlatformList {
   $set = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
   foreach ($p in $parts) {
     switch -Regex ($p) {
-      "^(?i)all$" { [void]$set.Add("Cursor"); [void]$set.Add("Claude"); [void]$set.Add("Generic"); break }
+      "^(?i)all$" { [void]$set.Add("Cursor"); [void]$set.Add("Claude"); [void]$set.Add("Antigravity"); [void]$set.Add("Generic"); break }
       "^(?i)cursor$" { [void]$set.Add("Cursor"); break }
       "^(?i)claude$" { [void]$set.Add("Claude"); break }
+      "^(?i)(antigravity|gemini|agy)$" { [void]$set.Add("Antigravity"); break }
       "^(?i)generic$" { [void]$set.Add("Generic"); break }
-      default { throw "Unknown -Platform value: $p (use All, Cursor, Claude, Generic)" }
+      default { throw "Unknown -Platform value: $p (use All, Cursor, Claude, Antigravity, Generic)" }
     }
   }
   if ($set.Count -eq 0) { throw "-Platform resolved to empty set." }
@@ -276,21 +280,54 @@ foreach ($plat in $platforms) {
         $locations["Claude MCP snippet"] = Join-Path $wsRoot ".claude\mcp.json.policy-dev.snippet"
       }
     }
+    "Antigravity" {
+      $skillsRoot = if ($Scope -eq "Global") {
+        Join-Path $wsRoot ".gemini\config\skills"
+      } else {
+        Join-Path $wsRoot ".agents\skills"
+      }
+      $mcpRoot = if ($Scope -eq "Global") {
+        Join-Path $wsRoot ".gemini\config"
+      } else {
+        Join-Path $wsRoot ".agents"
+      }
+      foreach ($name in $SkillNames) {
+        Install-SkillDir -Name $name -DestSkillsRoot $skillsRoot
+      }
+      $locations["Antigravity skills"] = $skillsRoot
+      if (-not $SkipPointers) {
+        if ($Scope -eq "Workspace") {
+          $agentsPath = Join-Path $wsRoot "AGENTS.md"
+          if (-not (Test-Path -LiteralPath $agentsPath)) {
+            Install-FromTemplate -TemplateName "AGENTS.md.snippet" -DestPath $agentsPath `
+              -PoliciesPath $policiesPath -SkillsHint ".agents/skills" -Label "AGENTS.md"
+            $locations["AGENTS.md"] = $agentsPath
+          } else {
+            Write-Host "OK skip AGENTS.md (already exists): $agentsPath"
+          }
+        }
+      }
+      if (-not $SkipMcpSnippet) {
+        Install-FromTemplate -TemplateName "mcp.json.snippet" -DestPath (Join-Path $mcpRoot "mcp_config.json.policy-dev.snippet") `
+          -PoliciesPath $policiesPath -SkillsHint ".agents/skills" -Label "MCP snippet (Antigravity)"
+        $locations["Antigravity MCP snippet"] = Join-Path $mcpRoot "mcp_config.json.policy-dev.snippet"
+      }
+    }
     "Generic" {
-      $skillsRoot = Join-Path $wsRoot "agent-skills"
+      $skillsRoot = Join-Path $wsRoot "skills"
       foreach ($name in $SkillNames) {
         Install-SkillDir -Name $name -DestSkillsRoot $skillsRoot
       }
       $locations["Generic skills"] = $skillsRoot
       if (-not $SkipPointers) {
         Install-FromTemplate -TemplateName "POLICY_DEV.md" -DestPath (Join-Path $wsRoot "POLICY_DEV.md") `
-          -PoliciesPath $policiesPath -SkillsHint "agent-skills" -Label "POLICY_DEV.md"
+          -PoliciesPath $policiesPath -SkillsHint "skills" -Label "POLICY_DEV.md"
         $locations["POLICY_DEV.md"] = Join-Path $wsRoot "POLICY_DEV.md"
         if ($Scope -eq "Workspace") {
           $agentsPath = Join-Path $wsRoot "AGENTS.md"
           if (-not (Test-Path -LiteralPath $agentsPath)) {
             Install-FromTemplate -TemplateName "AGENTS.md.snippet" -DestPath $agentsPath `
-              -PoliciesPath $policiesPath -SkillsHint "agent-skills" -Label "AGENTS.md"
+              -PoliciesPath $policiesPath -SkillsHint "skills" -Label "AGENTS.md"
             $locations["AGENTS.md"] = $agentsPath
           } else {
             Write-Host "OK skip AGENTS.md (already exists): $agentsPath - see POLICY_DEV.md"
@@ -299,7 +336,7 @@ foreach ($plat in $platforms) {
       }
       if (-not $SkipMcpSnippet) {
         Install-FromTemplate -TemplateName "mcp.json.snippet" -DestPath (Join-Path $wsRoot "mcp.json.policy-dev.snippet") `
-          -PoliciesPath $policiesPath -SkillsHint "agent-skills" -Label "MCP snippet (generic)"
+          -PoliciesPath $policiesPath -SkillsHint "skills" -Label "MCP snippet (generic)"
         $locations["Generic MCP snippet"] = Join-Path $wsRoot "mcp.json.policy-dev.snippet"
       }
     }
@@ -310,6 +347,8 @@ $setupDir = if ($platforms -contains "Cursor") {
   Join-Path $wsRoot ".cursor"
 } elseif ($platforms -contains "Claude") {
   Join-Path $wsRoot ".claude"
+} elseif ($platforms -contains "Antigravity") {
+  Join-Path $wsRoot ".agents"
 } else {
   $wsRoot
 }

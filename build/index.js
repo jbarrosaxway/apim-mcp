@@ -229,7 +229,7 @@ class AxwayMcpServer extends McpServer {
                 })),
             }),
         }), {
-            description: "One scraped Axway Policy Development doc page as markdown (RAG). Slug matches filename under .cursor/skills/apim-policy-development/docs/rag/ without .md. List via resources/list on this template; start from _manifest via slug index or playbook. Read-only offline mirror of docs.axway.com apim_policydev; re-crawl with crawl-policydev-docs.mjs to refresh.",
+            description: "One scraped Axway Policy Development doc page as markdown (RAG). Slug matches filename under skills/apim-policy-development/docs/rag/ without .md. List via resources/list on this template; start from _manifest via slug index or playbook. Read-only offline mirror of docs.axway.com apim_policydev; re-crawl with crawl-policydev-docs.mjs to refresh.",
             mimeType: "text/markdown",
         }, async (uri, variables) => {
             const slug = String(variables.slug || "");

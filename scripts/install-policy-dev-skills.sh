@@ -68,7 +68,10 @@ case "$Mode" in Copy|Junction) ;; *) echo "Invalid -Mode: $Mode" >&2; exit 1 ;; 
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-SourceSkillsRoot="$REPO_ROOT/.cursor/skills"
+SourceSkillsRoot="$REPO_ROOT/skills"
+if [[ ! -d "$SourceSkillsRoot" ]]; then
+  SourceSkillsRoot="$REPO_ROOT/.cursor/skills"
+fi
 BootstrapRoot="$REPO_ROOT/resources/policy-dev-bootstrap"
 
 SkillNames=("apim-policy-development")
@@ -76,24 +79,26 @@ if [[ "$IncludeGatewaySkill" -eq 1 ]]; then
   SkillNames+=("apim-gateway-code-analysis")
 fi
 
-# Populate Platforms array (Cursor Claude Generic)
+# Populate Platforms array (Cursor Claude Antigravity Generic)
 resolve_platforms() {
   Platforms=()
-  local raw="$1" part lower has_cursor=0 has_claude=0 has_generic=0
+  local raw="$1" part lower has_cursor=0 has_claude=0 has_antigravity=0 has_generic=0
   IFS=', ' read -r -a parts <<< "$raw"
   for part in "${parts[@]}"; do
     [[ -z "$part" ]] && continue
     lower="$(printf '%s' "$part" | tr '[:upper:]' '[:lower:]')"
     case "$lower" in
-      all) has_cursor=1; has_claude=1; has_generic=1 ;;
+      all) has_cursor=1; has_claude=1; has_antigravity=1; has_generic=1 ;;
       cursor) has_cursor=1 ;;
       claude) has_claude=1 ;;
+      antigravity|gemini|agy) has_antigravity=1 ;;
       generic) has_generic=1 ;;
       *) echo "Unknown -Platform value: $part" >&2; exit 1 ;;
     esac
   done
   [[ "$has_claude" -eq 1 ]] && Platforms+=("Claude")
   [[ "$has_cursor" -eq 1 ]] && Platforms+=("Cursor")
+  [[ "$has_antigravity" -eq 1 ]] && Platforms+=("Antigravity")
   [[ "$has_generic" -eq 1 ]] && Platforms+=("Generic")
   if [[ ${#Platforms[@]} -eq 0 ]]; then
     echo "-Platform resolved to empty set." >&2
@@ -231,20 +236,47 @@ for plat in "${Platforms[@]}"; do
         add_loc "Claude MCP snippet" "${WsRoot}/.claude/mcp.json.policy-dev.snippet"
       fi
       ;;
+    Antigravity)
+      if [[ "$Scope" == "Global" ]]; then
+        skills_root="${WsRoot}/.gemini/config/skills"
+        mcp_root="${WsRoot}/.gemini/config"
+      else
+        skills_root="${WsRoot}/.agents/skills"
+        mcp_root="${WsRoot}/.agents"
+      fi
+      for name in "${SkillNames[@]}"; do
+        install_skill_dir "$name" "$skills_root"
+      done
+      add_loc "Antigravity skills" "$skills_root"
+      if [[ "$SkipPointers" -ne 1 && "$Scope" == "Workspace" ]]; then
+        if [[ ! -f "${WsRoot}/AGENTS.md" ]]; then
+          expand_template_file "${BootstrapRoot}/AGENTS.md.snippet" \
+            "${WsRoot}/AGENTS.md" "$policies_path" ".agents/skills" "AGENTS.md"
+          add_loc "AGENTS.md" "${WsRoot}/AGENTS.md"
+        else
+          echo "OK skip AGENTS.md (already exists): ${WsRoot}/AGENTS.md"
+        fi
+      fi
+      if [[ "$SkipMcpSnippet" -ne 1 ]]; then
+        expand_template_file "${BootstrapRoot}/mcp.json.snippet" \
+          "${mcp_root}/mcp_config.json.policy-dev.snippet" "$policies_path" ".agents/skills" "MCP snippet (Antigravity)"
+        add_loc "Antigravity MCP snippet" "${mcp_root}/mcp_config.json.policy-dev.snippet"
+      fi
+      ;;
     Generic)
-      skills_root="${WsRoot}/agent-skills"
+      skills_root="${WsRoot}/skills"
       for name in "${SkillNames[@]}"; do
         install_skill_dir "$name" "$skills_root"
       done
       add_loc "Generic skills" "$skills_root"
       if [[ "$SkipPointers" -ne 1 ]]; then
         expand_template_file "${BootstrapRoot}/POLICY_DEV.md" \
-          "${WsRoot}/POLICY_DEV.md" "$policies_path" "agent-skills" "POLICY_DEV.md"
+          "${WsRoot}/POLICY_DEV.md" "$policies_path" "skills" "POLICY_DEV.md"
         add_loc "POLICY_DEV.md" "${WsRoot}/POLICY_DEV.md"
         if [[ "$Scope" == "Workspace" ]]; then
           if [[ ! -f "${WsRoot}/AGENTS.md" ]]; then
             expand_template_file "${BootstrapRoot}/AGENTS.md.snippet" \
-              "${WsRoot}/AGENTS.md" "$policies_path" "agent-skills" "AGENTS.md"
+              "${WsRoot}/AGENTS.md" "$policies_path" "skills" "AGENTS.md"
             add_loc "AGENTS.md" "${WsRoot}/AGENTS.md"
           else
             echo "OK skip AGENTS.md (already exists): ${WsRoot}/AGENTS.md - see POLICY_DEV.md"
@@ -253,7 +285,7 @@ for plat in "${Platforms[@]}"; do
       fi
       if [[ "$SkipMcpSnippet" -ne 1 ]]; then
         expand_template_file "${BootstrapRoot}/mcp.json.snippet" \
-          "${WsRoot}/mcp.json.policy-dev.snippet" "$policies_path" "agent-skills" "MCP snippet (generic)"
+          "${WsRoot}/mcp.json.policy-dev.snippet" "$policies_path" "skills" "MCP snippet (generic)"
         add_loc "Generic MCP snippet" "${WsRoot}/mcp.json.policy-dev.snippet"
       fi
       ;;
@@ -265,6 +297,7 @@ setup_dir="$WsRoot"
 for plat in "${Platforms[@]}"; do
   if [[ "$plat" == "Cursor" ]]; then setup_dir="${WsRoot}/.cursor"; break; fi
   if [[ "$plat" == "Claude" ]]; then setup_dir="${WsRoot}/.claude"; fi
+  if [[ "$plat" == "Antigravity" ]]; then setup_dir="${WsRoot}/.agents"; fi
 done
 mkdir -p "$setup_dir"
 readme="${setup_dir}/POLICY-DEV-SETUP.md"
