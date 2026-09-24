@@ -26,8 +26,9 @@ export function loadAuthConfig() {
     if (cachedConfig) {
         return cachedConfig;
     }
+    const authDisabled = parseBoolishTrue(process.env.MCP_AUTH_DISABLED);
     const rawMode = (process.env.MCP_AUTH_MODE || "none").toLowerCase();
-    const mode = rawMode === "oidc" ? "oidc" : "none";
+    const mode = authDisabled || rawMode === "none" || rawMode === "off" ? "none" : "oidc";
     // Entry gate: default mcp:observe when OIDC is on (hierarchical — admin/operator also satisfy).
     const rawRequired = process.env.MCP_REQUIRED_SCOPES !== undefined
         ? process.env.MCP_REQUIRED_SCOPES
@@ -260,7 +261,9 @@ export async function authenticateHttpRequest(req, res) {
 export function logAuthStartup() {
     const config = loadAuthConfig();
     if (config.mode === "none") {
-        console.log("[Auth] MCP_AUTH_MODE=none — HTTP MCP endpoints are not protected by OIDC");
+        const disabledVia = parseBoolishTrue(process.env.MCP_AUTH_DISABLED) ? "MCP_AUTH_DISABLED" : "MCP_AUTH_MODE";
+        const profile = (process.env.MCP_DEPLOYMENT_PROFILE || "observe").trim();
+        console.log(`[Auth] ${disabledVia}=none/off — HTTP MCP endpoints are not protected by OIDC; tool profile=${profile} (MCP_DEPLOYMENT_PROFILE)`);
         return;
     }
     console.log(`[Auth] MCP_AUTH_MODE=oidc issuer=${config.issuer} audience=${config.audience} resource=${config.resourceUrl} scopes=${config.requiredScopes.join(" ") || "(none)"}`);

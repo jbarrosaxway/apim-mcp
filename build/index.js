@@ -267,6 +267,15 @@ class AxwayMcpServer extends McpServer {
             result.contents[0].uri = uri.href;
             return result;
         });
+        this.resource("apim_policies_packages", "axway://apim/policies/packages", {
+            description: "Index of Policy Studio configuration fragment packages discovered under policies/ on the MCP host.",
+            mimeType: "application/json",
+        }, async (uri) => {
+            const data = fragment.listFragmentPackages();
+            const result = readJson(data);
+            result.contents[0].uri = uri.href;
+            return result;
+        });
     }
     /**
      * Overrides tools/list to advertise only tools allowed by the effective scope,
@@ -636,6 +645,12 @@ class AxwayMcpServer extends McpServer {
                             break;
                         case "axway_apim_fragment_gateway_resolve":
                             result = await fragment.resolveFragmentGateway(this.api, args);
+                            break;
+                        case "axway_apim_fragment_packages_list":
+                            result = fragment.listFragmentPackages();
+                            break;
+                        case "axway_apim_fragment_validate_submit":
+                            result = await fragment.validateFragmentSubmit(this.api, args);
                             break;
                         default:
                             throw new Error(`Tool '${tool.method}' is defined but not implemented in the server.`);

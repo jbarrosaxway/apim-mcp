@@ -393,7 +393,7 @@ const tool51 = {
         fragmentPath: z
             .string()
             .optional()
-            .describe("Package root relative to repo or absolute, default policies/client-registry-sync"),
+            .describe("Package root relative to repo or absolute (e.g. policies/example-policy-package)"),
         yamlOnly: z.boolean().optional().describe("Validate YAML only"),
         xmlOnly: z.boolean().optional().describe("Validate XML only"),
         strict: z
@@ -421,11 +421,11 @@ const tool52 = {
         fragmentPath: z
             .string()
             .optional()
-            .describe("Package root, default policies/client-registry-sync"),
+            .describe("Package root relative to repo or absolute (e.g. policies/example-policy-package)"),
         xmlOutputPath: z
             .string()
             .optional()
-            .describe("Output XML path; default fragment-xml/client-registry-sync-fragment.xml under package"),
+            .describe("Output XML path; default fragment-xml/example-policy-package-fragment.xml under package"),
         gatewayHome: z
             .string()
             .optional()
@@ -457,11 +457,52 @@ const tool53 = {
         fragmentPath: z
             .string()
             .optional()
-            .describe("Package root, default policies/client-registry-sync"),
+            .describe("Package root relative to repo or absolute (e.g. policies/example-policy-package)"),
         psProjectPath: z
             .string()
             .optional()
             .describe("Target ps-project path; default ps-project-with-sync under package"),
+    }).shape,
+};
+const tool55 = {
+    method: "axway_apim_fragment_packages_list",
+    description: "Read-only discovery of Policy Studio configuration fragment packages discovered under policies/ on the MCP host. Returns the repo root, default package, and package list. Use before axway_apim_fragment_validate to inspect valid fragmentPath values for packages installed in the MCP container. No parameters. Read-only. Scope: observe.",
+    parameters: z.object({}).shape,
+};
+const tool56 = {
+    method: "axway_apim_fragment_validate_submit",
+    description: "Validates a Policy Studio configuration fragment package submitted from the calling agent or client workspace without requiring the package to be installed in the MCP container. Accepts files (map of relative paths to base64-encoded content) or archiveBase64 (.tar.gz). Validates YAML/XML offline (Tier 0) or with Axway libraries (Tier 1) in an ephemeral sandbox. Params: files, archiveBase64, packageLabel, yamlOnly, xmlOnly, strict, gatewayHome, instanceId, regenerateXml. Scope: observe.",
+    parameters: z.object({
+        files: z
+            .record(z.string())
+            .optional()
+            .describe("Map of package-relative file paths to base64-encoded file content (e.g. fragment/META-INF/_fragment.yaml)"),
+        archiveBase64: z
+            .string()
+            .optional()
+            .describe("Base64-encoded .tar.gz archive containing the policy package root"),
+        packageLabel: z
+            .string()
+            .optional()
+            .describe("Optional label for the package (used in logs and sandbox directory name)"),
+        yamlOnly: z.boolean().optional().describe("Validate YAML only"),
+        xmlOnly: z.boolean().optional().describe("Validate XML only"),
+        strict: z
+            .boolean()
+            .optional()
+            .describe("Tier 1: fail if Axway gatewayHome cannot be resolved"),
+        gatewayHome: z
+            .string()
+            .optional()
+            .describe("Axway install root override (Tier 1)"),
+        instanceId: z
+            .string()
+            .optional()
+            .describe("Gateway instanceId from axway_apim_topology_list — resolves productVersion and looks up gatewayHome mapping"),
+        regenerateXml: z
+            .boolean()
+            .optional()
+            .describe("Tier 1: regenerate XML before validate via yaml-frag-to-xml (needs resolved gatewayHome)"),
     }).shape,
 };
 export function tools() {
@@ -521,6 +562,8 @@ export function tools() {
         tool52,
         tool53,
         tool54,
+        tool55,
+        tool56,
     ];
 }
 //# sourceMappingURL=tools.js.map

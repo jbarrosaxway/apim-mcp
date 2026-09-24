@@ -42,8 +42,12 @@ spec:
               value: {{ .Values.env.AXWAY_TLS_REJECT_UNAUTHORIZED | quote }}
             - name: AXWAY_TLS_INSECURE
               value: {{ .Values.env.AXWAY_TLS_INSECURE | quote }}
+            - name: MCP_AUTH_DISABLED
+              value: {{ .Values.env.MCP_AUTH_DISABLED | default "false" | quote }}
             - name: MCP_AUTH_MODE
               value: {{ .Values.env.MCP_AUTH_MODE | quote }}
+            - name: MCP_DEPLOYMENT_PROFILE
+              value: {{ .Values.env.MCP_DEPLOYMENT_PROFILE | default "observer" | quote }}
             - name: OIDC_ISSUER
               value: {{ .Values.env.OIDC_ISSUER | quote }}
             - name: OIDC_AUDIENCE
@@ -55,6 +59,26 @@ spec:
             {{- if .Values.env.AXWAY_GATEWAY_HOME }}
             - name: AXWAY_GATEWAY_HOME
               value: {{ .Values.env.AXWAY_GATEWAY_HOME | quote }}
+            {{- end }}
+            {{- if .Values.env.FRAGMENT_CLEANUP_ENABLED }}
+            - name: FRAGMENT_CLEANUP_ENABLED
+              value: {{ .Values.env.FRAGMENT_CLEANUP_ENABLED | quote }}
+            {{- end }}
+            {{- if .Values.env.FRAGMENT_ARTIFACT_MAX_AGE_MS }}
+            - name: FRAGMENT_ARTIFACT_MAX_AGE_MS
+              value: {{ .Values.env.FRAGMENT_ARTIFACT_MAX_AGE_MS | quote }}
+            {{- end }}
+            {{- if .Values.env.FRAGMENT_CLEANUP_INTERVAL_MS }}
+            - name: FRAGMENT_CLEANUP_INTERVAL_MS
+              value: {{ .Values.env.FRAGMENT_CLEANUP_INTERVAL_MS | quote }}
+            {{- end }}
+            {{- if .Values.env.FRAGMENT_MAX_XML_BYTES_PER_PACKAGE }}
+            - name: FRAGMENT_MAX_XML_BYTES_PER_PACKAGE
+              value: {{ .Values.env.FRAGMENT_MAX_XML_BYTES_PER_PACKAGE | quote }}
+            {{- end }}
+            {{- if .Values.env.FRAGMENT_UPLOAD_MAX_BYTES }}
+            - name: FRAGMENT_UPLOAD_MAX_BYTES
+              value: {{ .Values.env.FRAGMENT_UPLOAD_MAX_BYTES | quote }}
             {{- end }}
 
             {{- if .Values.env.OIDC_JWKS_URI }}

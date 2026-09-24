@@ -1,11 +1,11 @@
 {
+  "_notes": {
+    "policy_dev_bootstrap": "Para autorar policies noutro workspace (ex. apim-policies): scripts/install-policy-dev-skills.ps1 -TargetWorkspace <path>. Playbook: axway://apim/playbook/policy-development. Prompt: axway_apim_policy_develop. Docs: docs/pt-BR/instalar-skills-policy-dev.md.",
+    "fragment_tools": "Implementações de policies vivem no repo externo apim-policies (não neste MCP). Pacote montado na imagem: axway_apim_fragment_validate. Política só local: axway_apim_fragment_validate_submit."
+  },
   "mcpServers": {
     "Axway API Gateway & APIM (diagnóstico e administração)": {
-      "url": "http://mcp.example.com",
-      "auth": {
-        "CLIENT_ID": "mcp-cursor",
-        "scopes": ["openid", "profile"]
-      }
+      "url": "https://mcp.example.com/mcp"
     },
     "Axway MCP - stdio - local": {
       "command": "node",

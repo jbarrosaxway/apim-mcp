@@ -1,5 +1,5 @@
 # apim-mcp production image on the same Gateway base as apimgr (pcloud cluster).
-# Gateway libs ship in the base image  no COPY of apigateway/system/lib.
+# Gateway libs ship in the base image ï¿½ no COPY of apigateway/system/lib.
 # Build: npm run build, then Kaniko with -f Dockerfile.apimgr-base (see deploy-pcloud-axway.ps1 -ApimgrBase).
 
 ARG APIMGR_BASE_IMAGE=docker.repository.axway.com/apigateway-docker-prod/7.7/gateway:7.7.0.20250530-2-BN0004-ubi9
@@ -18,7 +18,7 @@ USER root
 WORKDIR /app
 
 # Node 20 for MCP server; python3 is already in the Gateway UBI9 image.
-# Base image ships curl-minimal  do not install full curl (dnf conflict on UBI9).
+# Base image ships curl-minimal ï¿½ do not install full curl (dnf conflict on UBI9).
 RUN curl -fsSL https://rpm.nodesource.com/setup_20.x | bash - && \
     dnf install -y nodejs && \
     dnf clean all
@@ -29,7 +29,10 @@ ENV TZ=UTC
 COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/package.json ./package.json
 COPY --from=builder /app/build ./build
-COPY --from=builder /app/policies ./policies
+# Policy packages live in apim-policies repo â€” mount at /app/policies or use validate_submit.
+# Only sandbox dir + generic validator ship in the image.
+COPY --from=builder /app/resources/fragment ./resources/fragment
+COPY --from=builder /app/policies/README.md ./policies/README.md
 COPY --from=builder /app/config ./config
 COPY --from=builder /app/.cursor/skills ./.cursor/skills
 RUN find ./.cursor/skills -type f -name '*.sh' -exec chmod +x {} \; 2>/dev/null || true
@@ -39,6 +42,9 @@ RUN if [ -d /opt/Axway/apigateway/posix/bin ] && [ ! -d /opt/Axway/apigateway/Li
       mkdir -p /opt/Axway/apigateway/Linux.x86_64 && \
       ln -sfn ../posix/bin /opt/Axway/apigateway/Linux.x86_64/bin; \
     fi
+
+# Writable sandbox for validate_submit (process runs as uid 1000)
+RUN mkdir -p /app/policies/.sandbox && chown -R 1000:1000 /app
 
 # EMT/Gateway images use emtuser (uid 1000)
 USER 1000:1000

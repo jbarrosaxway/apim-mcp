@@ -228,6 +228,26 @@ $cursorId = Ensure-Client @{
   attributes = @{ "pkce.code.challenge.method" = "S256" }
 }
 
+# Confidential PKCE client for Axway Fusion Design MCP proxy OAuth form.
+# Fusion redirect MUST stay present (exact URI used by Fusion Design UI).
+$fusionId = Ensure-Client @{
+  clientId = "mcp-fusion"
+  name = "MCP Axway Fusion (PKCE)"
+  enabled = $true
+  protocol = "openid-connect"
+  publicClient = $false
+  standardFlowEnabled = $true
+  directAccessGrantsEnabled = $false
+  implicitFlowEnabled = $false
+  redirectUris = @(
+    "https://example.sandbox.fusion.services.axway.com/design/oauth2/callback",
+    "http://127.0.0.1/*",
+    "http://localhost/*"
+  )
+  webOrigins = @("+")
+  attributes = @{ "pkce.code.challenge.method" = "S256" }
+}
+
 $cliId = Ensure-Client @{
   clientId = "mcp-test-cli"
   name = "MCP test CLI"
@@ -269,10 +289,12 @@ function Attach-DefaultScope {
 }
 
 # Default scopes: client requests only openid/profile; Keycloak includes the MCP scope
-# allowed by the user's role (role scope mapping). No need to request mcp:* in Cursor.
+# allowed by the user's role (role scope mapping). No need to request mcp:* in Cursor/Fusion.
 foreach ($s in @($scopeObserve, $scopeOperator, $scopeAdmin, $scopeTools)) {
   Detach-OptionalScope -ClientId $cursorId -Scope $s
   Attach-DefaultScope -ClientId $cursorId -Scope $s
+  Detach-OptionalScope -ClientId $fusionId -Scope $s
+  Attach-DefaultScope -ClientId $fusionId -Scope $s
   Detach-OptionalScope -ClientId $cliId -Scope $s
   Attach-DefaultScope -ClientId $cliId -Scope $s
 }
@@ -392,3 +414,7 @@ Write-Host ""
 Write-Host "Cursor: pedir so openid/profile - o MCP scope vem da role do user"
 Write-Host '  scopes: ["openid", "profile"]'
 Write-Host "  mcp-observer -> mcp:observe | mcp-operator -> mcp:operator | mcp-admin -> mcp:admin"
+Write-Host ""
+Write-Host "Fusion Design OAuth form: clientId=mcp-fusion (confidential + PKCE S256)"
+Write-Host "  Copy client secret from Keycloak Admin > Clients > mcp-fusion > Credentials"
+Write-Host "  Docs: docs/en/fusion-mcp-oidc-client.md | docs/pt-BR/fusion-mcp-oidc-client.md"

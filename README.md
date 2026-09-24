@@ -9,6 +9,7 @@ Languages: [English](README.md) | [Português (Brasil)](README.pt-BR.md)
 | Guide | Content |
 |-------|---------|
 | **[docs/en/end-to-end-guide.md](docs/en/end-to-end-guide.md)** | Install, configure Axway + OIDC, and authenticate in Cursor |
+| **[docs/en/install-policy-dev-skills.md](docs/en/install-policy-dev-skills.md)** | Install policy-dev skills (Cursor/Claude/generic) for **authoring policies** (`apim-policies`) |
 | **[docs/en/oidc-idps.md](docs/en/oidc-idps.md)** | Connect Keycloak, Entra ID, Okta, Auth0 (or another OIDC IdP) |
 | **[helm/axway-mcp/](helm/axway-mcp/)** | Kubernetes chart (Secret required for Axway users/passwords) |
 

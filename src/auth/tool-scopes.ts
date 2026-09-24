@@ -88,6 +88,8 @@ export const TOOL_ANNOTATIONS: Record<string, ToolAnnotations> = {
   "axway_apim_fragment_yaml_to_xml": {"readOnlyHint":false,"destructiveHint":false,"idempotentHint":true,"openWorldHint":false},
   "axway_apim_fragment_sync_ps_project": {"readOnlyHint":false,"destructiveHint":false,"idempotentHint":true,"openWorldHint":false},
   "axway_apim_fragment_gateway_resolve": {"readOnlyHint":true,"destructiveHint":false,"idempotentHint":true,"openWorldHint":false},
+  "axway_apim_fragment_packages_list": {"readOnlyHint":true,"destructiveHint":false,"idempotentHint":true,"openWorldHint":false},
+  "axway_apim_fragment_validate_submit": {"readOnlyHint":true,"destructiveHint":false,"idempotentHint":true,"openWorldHint":false},
 };
 
 /**
@@ -146,9 +148,12 @@ export const TOOL_REQUIRED_PROFILE: Record<string, ToolProfile> = {
   "axway_apim_quota_get": "observe",
   "axway_apim_quota_update": "operator",
   "axway_apim_fragment_validate": "observe",
-  "axway_apim_fragment_yaml_to_xml": "operator",
-  "axway_apim_fragment_sync_ps_project": "operator",
+  // Local/temp files only — does not mutate APIM (observe despite readOnlyHint:false).
+  "axway_apim_fragment_yaml_to_xml": "observe",
+  "axway_apim_fragment_sync_ps_project": "observe",
   "axway_apim_fragment_gateway_resolve": "observe",
+  "axway_apim_fragment_packages_list": "observe",
+  "axway_apim_fragment_validate_submit": "observe",
 };
 
 /** Optional human titles for tools/list. */
@@ -208,6 +213,8 @@ export const TOOL_TITLES: Record<string, string> = {
   "axway_apim_fragment_yaml_to_xml": "Fragment: YAML to XML (Federated)",
   "axway_apim_fragment_sync_ps_project": "Fragment: sync ps-project",
   "axway_apim_fragment_gateway_resolve": "Fragment: resolve gatewayHome (tiers)",
+  "axway_apim_fragment_packages_list": "Fragment: list policy packages",
+  "axway_apim_fragment_validate_submit": "Fragment: validate uploaded package",
 };
 
 export function parseToolProfile(value: string | undefined): ToolProfile | null {

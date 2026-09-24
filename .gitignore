@@ -5,3 +5,17 @@ vendor/
 .playwright-mcp/
 tmp/
 *.zip
+yamles.trc*
+policies/.sandbox/
+# Local policy packages (live in apim-policies; do not bake into MCP)
+policies/example-policy-package/
+resources/fragment/scripts/__pycache__/
+
+# Temporary files and chat exports containing secrets
+cursor_mcp_review_request.md
+tmp-*
+
+# Lab-specific test clusters and registry workarounds
+helm/registry/
+k8s/
+

@@ -16,6 +16,10 @@ export function setFallbackAuth(auth) {
 export function getAuthInfo() {
     const fromStore = authStorage.getStore();
     if (fromStore !== undefined) {
+        // Auth disabled: ALS holds null but deployment profile may be configured as fallback
+        if (fromStore === null && fallbackAuth) {
+            return fallbackAuth;
+        }
         return fromStore;
     }
     return fallbackAuth;
@@ -27,12 +31,12 @@ export function getAuthScopes() {
         return [PROFILE_SCOPES.admin];
     }
     if (info === null) {
-        // Auth disabled (MCP_AUTH_MODE=none) → full access
-        return [PROFILE_SCOPES.admin];
+        // Auth disabled without deployment profile fallback
+        return [PROFILE_SCOPES.observe];
     }
     return info.scopes;
 }
-export function authInfoFromProfile(profile) {
+export function authInfoFromProfile(profile, subjectPrefix = "stdio") {
     const scopes = [];
     if (profile === "admin") {
         scopes.push(PROFILE_SCOPES.admin);
@@ -44,7 +48,7 @@ export function authInfoFromProfile(profile) {
         scopes.push(PROFILE_SCOPES.observe);
     }
     return {
-        subject: `stdio:${profile}`,
+        subject: `${subjectPrefix}:${profile}`,
         scopes,
         expiresAt: Math.floor(Date.now() / 1000) + 365 * 24 * 3600,
         payload: {},
@@ -56,5 +60,12 @@ export function authInfoFromProfile(profile) {
 export function loadStdioToolProfile() {
     const parsed = parseToolProfile(process.env.MCP_TOOL_PROFILE);
     return parsed ?? "admin";
+}
+/**
+ * Reads MCP_DEPLOYMENT_PROFILE for HTTP when OIDC is disabled (default observe).
+ */
+export function loadDeploymentProfile() {
+    const parsed = parseToolProfile(process.env.MCP_DEPLOYMENT_PROFILE);
+    return parsed ?? "observe";
 }
 //# sourceMappingURL=context.js.map

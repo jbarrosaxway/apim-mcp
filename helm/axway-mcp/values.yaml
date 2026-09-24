@@ -34,11 +34,20 @@ env:
   AXWAY_TLS_REJECT_UNAUTHORIZED: "false"
   AXWAY_TLS_INSECURE: "false"
 
+  # Auth: MCP_AUTH_DISABLED=true or MCP_AUTH_MODE=none|off skips OIDC (no Bearer required).
+  MCP_AUTH_DISABLED: "false"
   MCP_AUTH_MODE: "none"
+  MCP_DEPLOYMENT_PROFILE: "observer"
   OIDC_ISSUER: ""
   OIDC_AUDIENCE: ""
   MCP_RESOURCE_URL: ""
   MCP_REQUIRED_SCOPES: "mcp:observe"
+
+  # Fragment artifact purge (YAML→XML, yamles traces, MCP test XML) — avoids disk exhaustion in long-running pods.
+  # FRAGMENT_CLEANUP_ENABLED: "true"
+  # FRAGMENT_ARTIFACT_MAX_AGE_MS: "86400000"   # 24h — delete generated XML/traces older than this
+  # FRAGMENT_CLEANUP_INTERVAL_MS: "3600000"    # 1h — periodic purge interval (startup purge always runs when enabled)
+  # FRAGMENT_MAX_XML_BYTES_PER_PACKAGE: ""     # optional per-package cap in fragment-xml/ (oldest removed first)
 
 # Kubernetes Secret with Axway credentials (required).
 # Create out-of-band (recommended):

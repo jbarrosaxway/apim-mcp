@@ -9,6 +9,7 @@ Servidor [MCP (Model Context Protocol)](https://modelcontextprotocol.io/) em **N
 | Guia | Conteúdo |
 |------|----------|
 | **[docs/pt-BR/guia-fim-a-fim.md](docs/pt-BR/guia-fim-a-fim.md)** | Instalar, configurar Axway + OIDC e autenticar no Cursor |
+| **[docs/pt-BR/instalar-skills-policy-dev.md](docs/pt-BR/instalar-skills-policy-dev.md)** | Instalar skills de policy-dev (Cursor/Claude/genérico) para **criar políticas** (repo `apim-policies`) |
 | **[docs/pt-BR/oidc-idps.md](docs/pt-BR/oidc-idps.md)** | Conectar Keycloak, Entra ID, Okta, Auth0 (ou outro OIDC) |
 | **[helm/axway-mcp/](helm/axway-mcp/)** | Chart Kubernetes (Secret obrigatório para users/senhas Axway) |
 

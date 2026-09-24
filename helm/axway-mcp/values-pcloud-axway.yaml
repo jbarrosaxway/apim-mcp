@@ -1,5 +1,6 @@
 # pcloud (Rancher local) — namespace axway
-# ANM/APIMgr via Cloudflare Tunnel (gnosistech.com.br)
+# pcloud (Rancher local) — namespace axway
+# ANM/APIMgr via tunnel/ingress (placeholders example.com — replace for your env)
 #
 # Uso:
 #   pwsh -File scripts/deploy-pcloud-axway.ps1
@@ -10,7 +11,7 @@ image:
   # Substituído pelo script (NodePort do registry in-cluster)
   repository: docker-registry.registry.svc.cluster.local:5000/apim-mcp
   pullPolicy: IfNotPresent
-  tag: "1.0.21-pcloud-apimgr-base"
+  tag: "1.0.30-pcloud-apimgr-base"
 
 imagePullSecrets: []
 
@@ -21,17 +22,24 @@ env:
   PORT: "3000"
   TZ: "America/Sao_Paulo"
 
-  AXWAY_GATEWAY_URL: "https://anm.gnosistech.com.br/api"
-  AXWAY_MANAGER_URL: "https://apimgr.gnosistech.com.br/api/portal/v1.4"
+  AXWAY_GATEWAY_URL: "https://anm.example.com/api"
+  AXWAY_MANAGER_URL: "https://apimgr.example.com/api/portal/v1.4"
 
   AXWAY_TLS_REJECT_UNAUTHORIZED: "false"
   AXWAY_TLS_INSECURE: "false"
 
-  MCP_AUTH_MODE: "oidc"
-  OIDC_ISSUER: "https://idp.gnosistech.com.br/realms/apim-mcp"
+  # Teste sem OIDC: auth desabilitado + perfil somente leitura (observe).
+  MCP_AUTH_DISABLED: "true"
+  MCP_AUTH_MODE: "none"
+  MCP_DEPLOYMENT_PROFILE: "observer"
+  OIDC_ISSUER: "https://idp.example.com/realms/apim-mcp"
   OIDC_AUDIENCE: "apim-mcp-api"
-  MCP_RESOURCE_URL: "https://apim-mcp.gnosistech.com.br"
+  MCP_RESOURCE_URL: "https://apim-mcp.example.com"
   MCP_REQUIRED_SCOPES: "mcp:observe"
+
+  FRAGMENT_CLEANUP_ENABLED: "true"
+  FRAGMENT_ARTIFACT_MAX_AGE_MS: "86400000"
+  FRAGMENT_UPLOAD_MAX_BYTES: "10485760"
 
 secrets:
   create: false

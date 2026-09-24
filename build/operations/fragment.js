@@ -1,53 +1,35 @@
 /**
-
  * @module src/operations/fragment
-
  * @description MCP tools that run local Python scripts for Policy Studio configuration
-
  * fragments (validate, YAML→XML Federated export, ps-project sync).
-
  * Requires Python 3 on the MCP host; yaml→XML also requires Axway Gateway (Jython).
-
  *
-
  * Tiers:
-
  * - Tier 0 (offline): static YAML/XML checks — always available without gatewayHome.
-
  * - Tier 1 (Axway libs): yamles, yaml-frag-to-xml, import dry-run — need resolved gatewayHome.
-
  */
 import { spawn } from "child_process";
 import fs from "fs";
 import path from "path";
-import { fileURLToPath } from "url";
 import { resolveGatewayHome } from "../gateway-homes.js";
-const moduleDir = path.dirname(fileURLToPath(import.meta.url));
-const DEFAULT_FRAGMENT_PACKAGE = "policies/client-registry-sync";
-const DEFAULT_XML_REL = "fragment-xml/client-registry-sync-fragment.xml";
-const DEFAULT_PS_PROJECT_REL = "ps-project-with-sync";
-/** Locate repo root (directory containing policies/client-registry-sync). */
-export function findRepoRoot() {
-    const candidates = [
-        process.cwd(),
-        path.join(moduleDir, "..", ".."),
-        path.join(moduleDir, ".."),
-    ];
-    for (const candidate of candidates) {
-        const pkg = path.join(candidate, DEFAULT_FRAGMENT_PACKAGE);
-        if (fs.existsSync(pkg)) {
-            return candidate;
-        }
-    }
-    return process.cwd();
-}
-function resolvePackageRoot(repoRoot, fragmentPath) {
-    const rel = fragmentPath?.trim() || DEFAULT_FRAGMENT_PACKAGE;
-    const resolved = path.isAbsolute(rel) ? rel : path.join(repoRoot, rel);
-    if (!fs.existsSync(resolved)) {
-        throw new Error(`Fragment package path not found: ${resolved}`);
-    }
-    return resolved;
+import { cleanupAfterFragmentOperation } from "./fragment-cleanup.js";
+import { assertSandboxPackage, bootstrapSandboxScripts, createSandboxDir, extractArchiveToSandbox, FragmentUploadError, purgeSandboxDir, purgeStaleSandboxes, writeSandboxFiles, } from "./fragment-sandbox.js";
+import { defaultFragmentPackage, DEFAULT_XML_REL, findRepoRoot, EXTERNAL_POLICIES_REPO, resolveFragmentPackageRoot, resolvePackageScript, resolvePsProjectPath, resolveXmlOutputPath, scanFragmentPackages, } from "./fragment-paths.js";
+export { defaultFragmentPackage, EXTERNAL_POLICIES_REPO, FragmentPathSecurityError, findRepoRoot, isValidFragmentPackage, scanFragmentPackages, } from "./fragment-paths.js";
+export { FragmentUploadError } from "./fragment-sandbox.js";
+/** Read-only discovery of fragment packages under policies/. */
+export function listFragmentPackages() {
+    const repoRoot = findRepoRoot();
+    const defaultPackage = defaultFragmentPackage(repoRoot);
+    return {
+        repoRoot,
+        defaultPackage,
+        fragmentPathHint: "fragmentPath is the package ROOT (not the fragment/ subdirectory). " +
+            "Use a path from axway_apim_fragment_packages_list when packages are mounted under policies/. " +
+            `Policy packages live in the separate ${EXTERNAL_POLICIES_REPO} repo — use validate_submit for local-only packages. ` +
+            "On the MCP pod, repo root is typically /app.",
+        packages: scanFragmentPackages(repoRoot),
+    };
 }
 function pythonCommand() {
     if (process.env.PYTHON?.trim()) {
@@ -110,9 +92,7 @@ function runProcess(command, cwd, extraEnv) {
     });
 }
 /**
-
  * Read-only: resolves productVersion (optional) and gatewayHome for Tier 1 fragment ops.
-
  */
 export async function resolveFragmentGateway(api, args = {}) {
     const resolution = await resolveGatewayHome(api, {
@@ -129,15 +109,12 @@ export async function resolveFragmentGateway(api, args = {}) {
     };
 }
 /**
-
- * Validates Client Registry Sync fragment YAML/XML (offline + optional Axway checks).
-
+ * Validates Policy Studio configuration fragment YAML/XML (offline + optional Axway checks).
  */
 export async function validateFragment(api, args = {}) {
     const repoRoot = findRepoRoot();
-    const packageRoot = resolvePackageRoot(repoRoot, args.fragmentPath);
-    const scriptsDir = path.join(packageRoot, "scripts");
-    const scriptPath = path.join(scriptsDir, "validate-fragment.py");
+    const packageRoot = resolveFragmentPackageRoot(repoRoot, args.fragmentPath);
+    const scriptPath = resolvePackageScript(packageRoot, "validate-fragment.py");
     if (!fs.existsSync(scriptPath)) {
         throw new Error(`validate-fragment.py not found: ${scriptPath}`);
     }
@@ -177,29 +154,78 @@ export async function validateFragment(api, args = {}) {
         gatewayHome: gatewayHome ?? "(not set — Tier 0 offline only)",
         tier: gatewayHome ? "1" : "0",
     };
+    if (result.success && args.regenerateXml) {
+        cleanupAfterFragmentOperation();
+    }
     return result;
 }
 /**
-
+ * Validates an uploaded fragment package (tar.gz base64 or files map) in an ephemeral sandbox.
+ * Sandbox is always purged after validation (success or failure).
+ */
+export async function validateFragmentSubmit(api, args = {}) {
+    const hasArchive = Boolean(args.archiveBase64?.trim());
+    const hasFiles = Boolean(args.files && Object.keys(args.files).length > 0);
+    if (!hasArchive && !hasFiles) {
+        throw new FragmentUploadError("Provide archiveBase64 (tar.gz) or files (map of relative path → base64 content)");
+    }
+    if (hasArchive && hasFiles) {
+        throw new FragmentUploadError("Provide only one of archiveBase64 or files, not both");
+    }
+    const repoRoot = findRepoRoot();
+    purgeStaleSandboxes();
+    const sandbox = createSandboxDir(repoRoot, args.packageLabel);
+    let writeStats = { fileCount: 0, totalBytes: 0 };
+    let bootstrapScripts = [];
+    let output;
+    try {
+        if (hasArchive) {
+            writeStats = extractArchiveToSandbox(sandbox.absolutePath, args.archiveBase64);
+        }
+        else {
+            writeStats = writeSandboxFiles(sandbox.absolutePath, args.files);
+        }
+        bootstrapScripts = bootstrapSandboxScripts(repoRoot, sandbox.absolutePath);
+        assertSandboxPackage(sandbox.absolutePath);
+        const result = await validateFragment(api, {
+            ...args,
+            fragmentPath: sandbox.relativePath,
+        });
+        output = {
+            ...result,
+            sandbox: {
+                sandboxId: sandbox.sandboxId,
+                relativePath: sandbox.relativePath,
+                purged: false,
+                writeStats,
+                bootstrapScripts: bootstrapScripts.length > 0 ? bootstrapScripts : undefined,
+                packageLabel: sandbox.label,
+            },
+        };
+        return output;
+    }
+    finally {
+        const purged = purgeSandboxDir(sandbox.absolutePath);
+        if (output?.sandbox) {
+            output.sandbox.purged = purged;
+        }
+        purgeStaleSandboxes(0);
+    }
+}
+/**
  * Regenerates Policy Studio-compatible XML from YAML via Federated Entity Store (Jython).
-
  */
 export async function fragmentYamlToXml(api, args = {}) {
     const repoRoot = findRepoRoot();
-    const packageRoot = resolvePackageRoot(repoRoot, args.fragmentPath);
-    const scriptsDir = path.join(packageRoot, "scripts");
-    const scriptPath = path.join(scriptsDir, "yaml-frag-to-xml.py");
+    const packageRoot = resolveFragmentPackageRoot(repoRoot, args.fragmentPath);
+    const scriptPath = resolvePackageScript(packageRoot, "yaml-frag-to-xml.py");
     if (!fs.existsSync(scriptPath)) {
         throw new Error(`yaml-frag-to-xml.py not found: ${scriptPath}`);
     }
     const gatewayResolution = await resolveLibGatewayHome(api, args, true);
     const gatewayHome = gatewayResolution.gatewayHome;
     const fragmentYamlDir = path.join(packageRoot, "fragment");
-    const xmlOut = args.xmlOutputPath?.trim()
-        ? path.isAbsolute(args.xmlOutputPath)
-            ? args.xmlOutputPath
-            : path.join(repoRoot, args.xmlOutputPath)
-        : path.join(packageRoot, DEFAULT_XML_REL);
+    const xmlOut = resolveXmlOutputPath(repoRoot, packageRoot, args.xmlOutputPath);
     const jython = jythonCommand(gatewayHome);
     const cmd = [
         jython,
@@ -223,27 +249,23 @@ export async function fragmentYamlToXml(api, args = {}) {
         gatewayHome,
         tier: "1",
     };
+    if (result.success) {
+        cleanupAfterFragmentOperation();
+    }
     return result;
 }
 /**
-
  * Copies canonical fragment/ tree into ps-project-with-sync/ for Policy Studio alignment.
-
  */
 export async function syncPsProjectFromFragment(args = {}) {
     const repoRoot = findRepoRoot();
-    const packageRoot = resolvePackageRoot(repoRoot, args.fragmentPath);
-    const scriptsDir = path.join(packageRoot, "scripts");
-    const scriptPath = path.join(scriptsDir, "sync-ps-project-from-fragment.py");
+    const packageRoot = resolveFragmentPackageRoot(repoRoot, args.fragmentPath);
+    const scriptPath = resolvePackageScript(packageRoot, "sync-ps-project-from-fragment.py");
     if (!fs.existsSync(scriptPath)) {
         throw new Error(`sync-ps-project-from-fragment.py not found: ${scriptPath}`);
     }
     const fragmentYamlDir = path.join(packageRoot, "fragment");
-    const psProject = args.psProjectPath?.trim()
-        ? path.isAbsolute(args.psProjectPath)
-            ? args.psProjectPath
-            : path.join(repoRoot, args.psProjectPath)
-        : path.join(packageRoot, DEFAULT_PS_PROJECT_REL);
+    const psProject = resolvePsProjectPath(repoRoot, packageRoot, args.psProjectPath);
     const cmd = [
         pythonCommand(),
         scriptPath,
@@ -260,6 +282,37 @@ export async function syncPsProjectFromFragment(args = {}) {
         psProjectPath: psProject,
         tier: "0",
     };
+    if (result.success) {
+        cleanupAfterFragmentOperation();
+    }
     return result;
+}
+/** Markdown listing for axway://apim/policies/packages resource. */
+export function formatFragmentPackagesResource() {
+    const data = listFragmentPackages();
+    const lines = [
+        "# Fragment packages (policies/)",
+        "",
+        `Repo root: \`${data.repoRoot}\``,
+        `Default package: \`${data.defaultPackage}\``,
+        "",
+        data.fragmentPathHint,
+        "",
+        "Fragment tools only accept whitelisted packages under `policies/`. Generated XML and trace files are ephemeral and purged by age on the MCP host.",
+        "",
+        "Discover live via tool `axway_apim_fragment_packages_list` before validate/yaml_to_xml when fragmentPath is unknown.",
+        "",
+    ];
+    if (data.packages.length === 0) {
+        lines.push("_No fragment packages found under policies/._");
+    }
+    else {
+        lines.push("| Package | default | YAML fragment | XML export | validate script |");
+        lines.push("|---------|---------|---------------|------------|-----------------|");
+        for (const pkg of data.packages) {
+            lines.push(`| \`${pkg.relativePath}\` | ${pkg.default ? "yes" : "no"} | ${pkg.hasYamlFragment ? "yes" : "no"} | ${pkg.hasXml ? "yes" : "no"} | ${pkg.hasScripts ? "yes" : "no"} |`);
+        }
+    }
+    return lines.join("\n");
 }
 //# sourceMappingURL=fragment.js.map

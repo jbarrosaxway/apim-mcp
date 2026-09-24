@@ -1,0 +1,26 @@
+---
+description: >-
+  Axway Policy Studio development — use skill apim-policy-development, MCP
+  playbook when available, and RAG; never invent com.vordel.* APIs.
+globs: "**/fragment/**/*,**/policies/**/*,**/*_fragment.yaml,**/*.fed"
+alwaysApply: false
+---
+
+# Axway policy authoring (bootstrap)
+
+When creating or editing Axway Gateway policies, filters, listeners, Auth Profiles, Portal Alerts, or YAML/XML configuration fragments:
+
+1. **Load skill** `apim-policy-development` from `{{SKILLS_HINT}}` (or project / user skills).
+2. **If MCP is connected**, attach resource `axway://apim/playbook/policy-development` (optional live tools).
+3. **Prefer RAG** via `axway://apim/docs/policydev/{slug}` or local `docs/rag/_manifest.md` under the skill — do not invent filter/`com.vordel.*` APIs.
+4. **Validate** local packages with `axway_apim_fragment_validate_submit` (`files` or `archiveBase64`) when MCP is available. Do **not** invent `fragmentPath` for `axway_apim_fragment_validate` unless `packages_list` returned it.
+5. **Examples / client packages** live in the separate repo **apim-policies**, not in apim-mcp:
+   - Path hint: `{{APIM_POLICIES_PATH}}`
+   - Template: `policies/PACKAGE-README-TEMPLATE.md`
+   - Example: `policies/example-policy-package/`
+
+Optional MCP prompt: `axway_apim_policy_develop`.
+
+Skills installed: {{SKILL_NAMES}}.
+
+If MCP is offline, still follow the skill + local RAG; skip live topology/FED tools until MCP is available.

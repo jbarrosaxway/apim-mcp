@@ -55,7 +55,13 @@ If the user asks to create or change Gateway policies, filters, listeners, Porta
 1. Attach \`axway://apim/playbook/policy-development\` (skill \`apim-policy-development\`).
 2. Use RAG markdown under docs/rag or \`axway://apim/docs/policydev/{slug}\` — do not invent filter semantics.
 3. Prefer API Management **Read *** for local registry lookups; REST ConnectToURL for mutations.
-4. After editing fragments: \`axway_apim_fragment_validate\` (Tier 0 offline sempre; Tier 1 yamles/import dry-run com gatewayHome resolvido via mapeamento \`config/axway-gateway-homes.json\`, \`instanceId\`+topologia, ou \`AXWAY_GATEWAY_HOME\`); \`axway_apim_fragment_yaml_to_xml\` (Tier 1); \`axway_apim_fragment_sync_ps_project\` (Tier 0); \`axway_apim_fragment_gateway_resolve\` para diagnosticar mapeamento — prefer MCP tools over shell on the MCP host.
+4. After editing fragments — decision tree (do not invent fragmentPath):
+   - Policy already in MCP container: call \`axway_apim_fragment_packages_list\` -> \`axway_apim_fragment_validate\` with returned \`fragmentPath\` (package ROOT under \`policies/\`).
+   - Policy only on agent/client workspace: call \`axway_apim_fragment_validate_submit\` (no image rebuild):
+     - Prefer \`files\`: map \`relativePath -> base64\` when the agent has individual YAML/XML files.
+     - Or \`archiveBase64\`: when the user has a .tar.gz archive.
+     - Optional \`packageLabel\` for sandbox identifier/logs (e.g. \`example-policy-package\`).
+   - Tier 0 (offline): static YAML/XML checks; Tier 1 (Axway libs): yamles/import dry-run with resolved \`gatewayHome\`. Tools: \`axway_apim_fragment_yaml_to_xml\`, \`axway_apim_fragment_sync_ps_project\`, \`axway_apim_fragment_gateway_resolve\`. Resource: \`axway://apim/policies/packages\`.
 5. Optional prompt: \`axway_apim_policy_develop\`.
 
 ## Rules

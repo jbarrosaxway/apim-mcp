@@ -6,7 +6,7 @@ replicaCount: 1
 image:
   repository: docker-registry.registry.svc.cluster.local:5000/apim-mcp
   pullPolicy: IfNotPresent
-  tag: "1.0.21-pcloud-apimgr-base"
+  tag: "1.0.23-pcloud-apimgr-base"
 
 imagePullSecrets: []
 
@@ -16,16 +16,16 @@ env:
   TZ: "America/Sao_Paulo"
   AXWAY_GATEWAY_HOME: "/opt/Axway"
 
-  AXWAY_GATEWAY_URL: "https://anm.gnosistech.com.br/api"
-  AXWAY_MANAGER_URL: "https://apimgr.gnosistech.com.br/api/portal/v1.4"
+  AXWAY_GATEWAY_URL: "https://anm.example.com/api"
+  AXWAY_MANAGER_URL: "https://apimgr.example.com/api/portal/v1.4"
 
   AXWAY_TLS_REJECT_UNAUTHORIZED: "false"
   AXWAY_TLS_INSECURE: "false"
 
   MCP_AUTH_MODE: "oidc"
-  OIDC_ISSUER: "https://idp.gnosistech.com.br/realms/apim-mcp"
+  OIDC_ISSUER: "https://idp.example.com/realms/apim-mcp"
   OIDC_AUDIENCE: "apim-mcp-api"
-  MCP_RESOURCE_URL: "https://apim-mcp.gnosistech.com.br"
+  MCP_RESOURCE_URL: "https://apim-mcp.example.com"
   MCP_REQUIRED_SCOPES: "mcp:observe"
 
 secrets:

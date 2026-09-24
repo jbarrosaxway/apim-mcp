@@ -69,10 +69,8 @@ function New-BuildTarball([string]$OutPath) {
     "src", "build", "config", "package.json", "package-lock.json", "tsconfig.json",
     "Dockerfile", "Dockerfile.apimgr-base", ".dockerignore",
     ".cursor/skills/apim-gateway-code-analysis",
-    "policies/client-registry-sync/fragment",
-    "policies/client-registry-sync/scripts",
-    "policies/client-registry-sync/fragment-xml",
-    "policies/client-registry-sync/docs"
+    "resources/fragment/scripts",
+    "policies"
   )
   $existing = @()
   foreach ($rel in $paths) {
@@ -284,7 +282,7 @@ function Test-McpPod {
   Invoke-Kubectl -n $McpNamespace logs $podName --tail=25
   kubectl --context $KubeContext -n $McpNamespace exec $podName -- node -e "const t=require('./build/tools.js'); console.log('tools', t.tools().length);"
   kubectl --context $KubeContext -n $McpNamespace exec $podName -- test -x /opt/Axway/apigateway/posix/bin/jython; Write-Host "JYTHON_OK"
-  kubectl --context $KubeContext -n $McpNamespace exec $podName -- python3 policies/client-registry-sync/scripts/validate-fragment.py --yaml-only 2>&1 | Select-Object -Last 5
+  kubectl --context $KubeContext -n $McpNamespace exec $podName -- test -f resources/fragment/scripts/validate-fragment-generic.py; Write-Host "GENERIC_VALIDATOR_OK"
   kubectl --context $KubeContext -n $McpNamespace exec $podName -- node --input-type=module -e @"
 import { AxwayApi } from './build/api.js';
 import * as topology from './build/operations/topology.js';
@@ -295,9 +293,12 @@ console.log('TOPOLOGY_OK', top.instanceCount, top.domainInfo?.productVersion);
 }
 
 if ($ApimgrBase) {
-  if (-not $HelmValuesFile) { $HelmValuesFile = "./helm/axway-mcp/values-pcloud-apimgr-base.yaml" }
-  if ($McpRelease -eq "axway-mcp") { $McpRelease = "axway-mcp-apimgr-test" }
-  if ($ImageTag -eq "1.0.20-pcloud-amd64") { $ImageTag = "1.0.21-pcloud-apimgr-base" }
+  if (-not $HelmValuesFile) {
+    $HelmValuesFile = "./helm/axway-mcp/values-pcloud-apimgr-base.yaml"
+    # Default ApimgrBase values → isolated test release; override -HelmValuesFile/-McpRelease for main.
+    if ($McpRelease -eq "axway-mcp") { $McpRelease = "axway-mcp-apimgr-test" }
+  }
+  if ($ImageTag -eq "1.0.20-pcloud-amd64") { $ImageTag = "1.0.23-pcloud-apimgr-base" }
 }
 
 Write-Host "Deploy apim-mcp -> pcloud ($KubeContext) ns=$McpNamespace release=$McpRelease tag=$ImageTag"
