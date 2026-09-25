@@ -29,4 +29,6 @@ helm/**/values-*secret*.yaml
 !helm/**/values-lab-secret.example.yaml
 
 .vscode/mcp.json*
+config/axway-gateway-homes.json
+
 
