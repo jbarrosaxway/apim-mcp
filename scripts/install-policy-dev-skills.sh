@@ -79,19 +79,21 @@ if [[ "$IncludeGatewaySkill" -eq 1 ]]; then
   SkillNames+=("apim-gateway-code-analysis")
 fi
 
-# Populate Platforms array (Cursor Claude Antigravity Generic)
+# Populate Platforms array (Cursor Claude Antigravity VSCode Cline Generic)
 resolve_platforms() {
   Platforms=()
-  local raw="$1" part lower has_cursor=0 has_claude=0 has_antigravity=0 has_generic=0
+  local raw="$1" part lower has_cursor=0 has_claude=0 has_antigravity=0 has_vscode=0 has_cline=0 has_generic=0
   IFS=', ' read -r -a parts <<< "$raw"
   for part in "${parts[@]}"; do
     [[ -z "$part" ]] && continue
     lower="$(printf '%s' "$part" | tr '[:upper:]' '[:lower:]')"
     case "$lower" in
-      all) has_cursor=1; has_claude=1; has_antigravity=1; has_generic=1 ;;
+      all) has_cursor=1; has_claude=1; has_antigravity=1; has_vscode=1; has_cline=1; has_generic=1 ;;
       cursor) has_cursor=1 ;;
       claude) has_claude=1 ;;
       antigravity|gemini|agy) has_antigravity=1 ;;
+      vscode|vs-code|code) has_vscode=1 ;;
+      cline|roo|roo-cline) has_cline=1 ;;
       generic) has_generic=1 ;;
       *) echo "Unknown -Platform value: $part" >&2; exit 1 ;;
     esac
@@ -99,6 +101,8 @@ resolve_platforms() {
   [[ "$has_claude" -eq 1 ]] && Platforms+=("Claude")
   [[ "$has_cursor" -eq 1 ]] && Platforms+=("Cursor")
   [[ "$has_antigravity" -eq 1 ]] && Platforms+=("Antigravity")
+  [[ "$has_vscode" -eq 1 ]] && Platforms+=("VSCode")
+  [[ "$has_cline" -eq 1 ]] && Platforms+=("Cline")
   [[ "$has_generic" -eq 1 ]] && Platforms+=("Generic")
   if [[ ${#Platforms[@]} -eq 0 ]]; then
     echo "-Platform resolved to empty set." >&2
@@ -263,6 +267,99 @@ for plat in "${Platforms[@]}"; do
         add_loc "Antigravity MCP snippet" "${mcp_root}/mcp_config.json.policy-dev.snippet"
       fi
       ;;
+    VSCode)
+      skills_root="${WsRoot}/.vscode/skills"
+      mcp_root="${WsRoot}/.vscode"
+      for name in "${SkillNames[@]}"; do
+        install_skill_dir "$name" "$skills_root"
+      done
+      add_loc "VSCode skills" "$skills_root"
+      if [[ "$SkipPointers" -ne 1 ]]; then
+        expand_template_file "${BootstrapRoot}/POLICY_DEV.md" \
+          "${mcp_root}/POLICY_DEV.md" "$policies_path" ".vscode/skills" "POLICY_DEV.md (VSCode)"
+        add_loc "VSCode POLICY_DEV.md" "${mcp_root}/POLICY_DEV.md"
+        if [[ "$Scope" == "Workspace" ]]; then
+          if [[ ! -f "${WsRoot}/AGENTS.md" ]]; then
+            expand_template_file "${BootstrapRoot}/AGENTS.md.snippet" \
+              "${WsRoot}/AGENTS.md" "$policies_path" ".vscode/skills" "AGENTS.md (VSCode)"
+            add_loc "AGENTS.md" "${WsRoot}/AGENTS.md"
+          else
+            echo "OK skip AGENTS.md (already exists): ${WsRoot}/AGENTS.md"
+          fi
+        fi
+      fi
+      if [[ "$SkipMcpSnippet" -ne 1 ]]; then
+        expand_template_file "${BootstrapRoot}/mcp.json.snippet" \
+          "${mcp_root}/mcp.json.policy-dev.snippet" "$policies_path" ".vscode/skills" "MCP snippet (VSCode)"
+        add_loc "VSCode MCP snippet" "${mcp_root}/mcp.json.policy-dev.snippet"
+      fi
+      ;;
+    Cline)
+      skills_root="${WsRoot}/.cline/skills"
+      mcp_root="${WsRoot}/.cline"
+      for name in "${SkillNames[@]}"; do
+        install_skill_dir "$name" "$skills_root"
+      done
+      add_loc "Cline skills" "$skills_root"
+      if [[ "$SkipPointers" -ne 1 ]]; then
+        expand_template_file "${BootstrapRoot}/POLICY_DEV.md" \
+          "${mcp_root}/POLICY_DEV.md" "$policies_path" ".cline/skills" "POLICY_DEV.md (Cline)"
+        add_loc "Cline POLICY_DEV.md" "${mcp_root}/POLICY_DEV.md"
+        expand_template_file "${BootstrapRoot}/POLICY_DEV.md" \
+          "${WsRoot}/.clinerules" "$policies_path" ".cline/skills" ".clinerules (Cline)"
+        add_loc "Cline .clinerules" "${WsRoot}/.clinerules"
+      fi
+      if [[ "$SkipMcpSnippet" -ne 1 ]]; then
+        expand_template_file "${BootstrapRoot}/mcp.json.snippet" \
+          "${mcp_root}/cline_mcp_settings.json.policy-dev.snippet" "$policies_path" ".cline/skills" "MCP snippet (Cline)"
+        add_loc "Cline MCP snippet" "${mcp_root}/cline_mcp_settings.json.policy-dev.snippet"
+      fi
+      if [[ "$Scope" == "Global" ]]; then
+        if [[ "$(uname)" == "Darwin" ]]; then
+          cline_settings_file="$HOME/Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json"
+        else
+          cline_settings_file="$HOME/.config/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json"
+        fi
+        mkdir -p "$(dirname "$cline_settings_file")"
+        cat > "$cline_settings_file" <<EOF
+{
+  "mcpServers": {
+    "axway-apim": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "${McpUrl}"
+      ],
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
+EOF
+        add_loc "Cline VSCode MCP Config" "$cline_settings_file"
+
+        cline_data_file="${WsRoot}/.cline/data/settings/cline_mcp_settings.json"
+        mkdir -p "$(dirname "$cline_data_file")"
+        cat > "$cline_data_file" <<EOF
+{
+  "mcpServers": {
+    "axway-apim": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "${McpUrl}"
+      ],
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
+EOF
+        add_loc "Cline Data MCP Config" "$cline_data_file"
+      fi
+      ;;
     Generic)
       skills_root="${WsRoot}/skills"
       for name in "${SkillNames[@]}"; do
@@ -298,6 +395,8 @@ for plat in "${Platforms[@]}"; do
   if [[ "$plat" == "Cursor" ]]; then setup_dir="${WsRoot}/.cursor"; break; fi
   if [[ "$plat" == "Claude" ]]; then setup_dir="${WsRoot}/.claude"; fi
   if [[ "$plat" == "Antigravity" ]]; then setup_dir="${WsRoot}/.agents"; fi
+  if [[ "$plat" == "VSCode" ]]; then setup_dir="${WsRoot}/.vscode"; fi
+  if [[ "$plat" == "Cline" ]]; then setup_dir="${WsRoot}/.cline"; fi
 done
 mkdir -p "$setup_dir"
 readme="${setup_dir}/POLICY-DEV-SETUP.md"

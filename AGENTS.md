@@ -45,6 +45,11 @@ This repository provides canonical AI agent skills located under [`skills/`](ski
 3. **Build & Quality:**
    - Verify TypeScript compilation with `npm run build`. Zero compile errors are required.
    - All tools must adhere to Axway MCP style guide naming (`axway_apim_<resource>_<action>`) and include proper annotations (`readOnlyHint`, `destructiveHint`, `idempotentHint`, `openWorldHint`).
+4. **Policy Deployment & K8s `/merge` Lifecycle:**
+   - Pre-flight validation MUST use [`resources/fragment/scripts/validate-fragment-generic.py`](resources/fragment/scripts/validate-fragment-generic.py) or `axway_apim_fragment_validate_submit`.
+   - Deployments to containerized Axway Gateways (e.g. `apim-lab`) use the persistent volume mounted at **/merge** (`/merge/fed.fed` or `/merge/yaml.tar.gz`).
+   - Deployment automation is standardized in [`scripts/deploy-gateway-fed-helpers.ps1`](scripts/deploy-gateway-fed-helpers.ps1) (`Copy-ArtifactToPod` via `kubectl cp` -> `Restart-Deployments` -> `Wait-DeploymentsReady`).
+
 
 ---
 

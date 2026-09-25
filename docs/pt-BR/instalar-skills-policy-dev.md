@@ -16,13 +16,15 @@ A **skill em markdown** (`SKILL.md` + RAG) é a fonte de verdade, localizada can
 
 | Valor | Destinos |
 |-------|----------|
-| **All** (default) | Cursor + Claude + Antigravity + Generic |
+| **All** (default) | Cursor + Claude + Antigravity + VSCode + Cline + Generic |
+| **Cline** | `.cline/skills`, `.clinerules`, `.cline/POLICY_DEV.md`, MCP config em `saoudrizwan.claude-dev/settings/cline_mcp_settings.json` |
+| **VSCode** | `.vscode/skills`, `.vscode/POLICY_DEV.md`, snippet MCP em `.vscode/` |
 | **Cursor** | `.cursor/skills`, `.cursor/rules/*.mdc`, snippet MCP em `.cursor/` |
 | **Claude** | `.claude/skills`, `.claude/apim-policy-dev.md`, `CLAUDE.md` se ainda não existir |
 | **Antigravity** | `.agents/skills` (workspace) ou `~/.gemini/config/skills` (global), snippet MCP em `.agents/` |
 | **Generic** | `skills/`, `POLICY_DEV.md`, `AGENTS.md` se ainda não existir (workspace) |
 
-Pode passar lista: `-Platform Cursor,Antigravity,Generic`.
+Pode passar lista: `-Platform Cline,VSCode,Cursor`.
 
 ## Passos (opção A)
 

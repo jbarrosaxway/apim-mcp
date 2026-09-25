@@ -16,13 +16,15 @@ The **markdown skill** (`SKILL.md` + RAG) is the source of truth, located canoni
 
 | Value | Destinations |
 |-------|----------------|
-| **All** (default) | Cursor + Claude + Antigravity + Generic |
+| **All** (default) | Cursor + Claude + Antigravity + VSCode + Cline + Generic |
+| **Cline** | `.cline/skills`, `.clinerules`, `.cline/POLICY_DEV.md`, MCP config under `saoudrizwan.claude-dev/settings/cline_mcp_settings.json` |
+| **VSCode** | `.vscode/skills`, `.vscode/POLICY_DEV.md`, MCP snippet under `.vscode/` |
 | **Cursor** | `.cursor/skills`, `.cursor/rules/*.mdc`, MCP snippet under `.cursor/` |
 | **Claude** | `.claude/skills`, `.claude/apim-policy-dev.md`, `CLAUDE.md` if missing |
 | **Antigravity** | `.agents/skills` (workspace) or `~/.gemini/config/skills` (global), MCP snippet under `.agents/` |
 | **Generic** | `skills/`, `POLICY_DEV.md`, `AGENTS.md` if missing (workspace) |
 
-Comma-separated lists work: `-Platform Cursor,Antigravity,Generic`.
+Comma-separated lists work: `-Platform Cline,VSCode,Cursor`.
 
 ## Steps (option A)
 

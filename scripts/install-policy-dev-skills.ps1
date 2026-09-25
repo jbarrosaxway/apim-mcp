@@ -53,12 +53,14 @@ function Resolve-PlatformList {
   $set = [System.Collections.Generic.HashSet[string]]::new([StringComparer]::OrdinalIgnoreCase)
   foreach ($p in $parts) {
     switch -Regex ($p) {
-      "^(?i)all$" { [void]$set.Add("Cursor"); [void]$set.Add("Claude"); [void]$set.Add("Antigravity"); [void]$set.Add("Generic"); break }
+      "^(?i)all$" { [void]$set.Add("Cursor"); [void]$set.Add("Claude"); [void]$set.Add("Antigravity"); [void]$set.Add("VSCode"); [void]$set.Add("Cline"); [void]$set.Add("Generic"); break }
       "^(?i)cursor$" { [void]$set.Add("Cursor"); break }
       "^(?i)claude$" { [void]$set.Add("Claude"); break }
       "^(?i)(antigravity|gemini|agy)$" { [void]$set.Add("Antigravity"); break }
+      "^(?i)(vscode|vs-code|code)$" { [void]$set.Add("VSCode"); break }
+      "^(?i)(cline|roo|roo-cline)$" { [void]$set.Add("Cline"); break }
       "^(?i)generic$" { [void]$set.Add("Generic"); break }
-      default { throw "Unknown -Platform value: $p (use All, Cursor, Claude, Antigravity, Generic)" }
+      default { throw "Unknown -Platform value: $p (use All, Cursor, Claude, Antigravity, VSCode, Cline, Generic)" }
     }
   }
   if ($set.Count -eq 0) { throw "-Platform resolved to empty set." }
@@ -95,7 +97,7 @@ function Install-SkillDir {
     if ($PSCmdlet.ShouldProcess($dest, "Remove existing skill")) {
       $item = Get-Item -LiteralPath $dest -Force
       if ($item.Attributes -band [IO.FileAttributes]::ReparsePoint) {
-        Remove-Item -LiteralPath $dest -Force
+        Remove-Item -LiteralPath $dest -Recurse -Force
       } else {
         Remove-Item -LiteralPath $dest -Recurse -Force
       }
@@ -115,6 +117,39 @@ function Install-SkillDir {
       Write-Host "OK copy: $Name -> $dest"
     }
   }
+}
+
+function Update-ClineMcpSettings {
+  param(
+    [string]$FilePath,
+    [string]$McpUrl
+  )
+  $dir = Split-Path -Parent $FilePath
+  if ($dir -and -not (Test-Path -LiteralPath $dir)) {
+    New-Item -ItemType Directory -Path $dir -Force | Out-Null
+  }
+  $cfg = @{ mcpServers = @{} }
+  if (Test-Path -LiteralPath $FilePath) {
+    try {
+      $raw = Get-Content -LiteralPath $FilePath -Raw -Encoding UTF8
+      $parsed = $raw | ConvertFrom-Json
+      if ($parsed.mcpServers) {
+        foreach ($prop in $parsed.mcpServers.PSObject.Properties) {
+          $cfg.mcpServers[$prop.Name] = $prop.Value
+        }
+      }
+    } catch {
+      Write-Warning "Could not parse existing $FilePath; initializing new config."
+    }
+  }
+  $cfg.mcpServers["axway-apim"] = [ordered]@{
+    command = "npx"
+    args = @("-y", "mcp-remote", $McpUrl)
+    disabled = $false
+    autoApprove = @()
+  }
+  $json = ConvertTo-Json -InputObject $cfg -Depth 10
+  Write-Utf8NoBom -Path $FilePath -Content $json
 }
 
 function Expand-Template {
@@ -313,6 +348,73 @@ foreach ($plat in $platforms) {
         $locations["Antigravity MCP snippet"] = Join-Path $mcpRoot "mcp_config.json.policy-dev.snippet"
       }
     }
+    "VSCode" {
+      $skillsRoot = Join-Path $wsRoot ".vscode\skills"
+      $mcpRoot = Join-Path $wsRoot ".vscode"
+      foreach ($name in $SkillNames) {
+        Install-SkillDir -Name $name -DestSkillsRoot $skillsRoot
+      }
+      $locations["VSCode skills"] = $skillsRoot
+      if (-not $SkipPointers) {
+        Install-FromTemplate -TemplateName "POLICY_DEV.md" -DestPath (Join-Path $mcpRoot "POLICY_DEV.md") `
+          -PoliciesPath $policiesPath -SkillsHint ".vscode/skills" -Label "POLICY_DEV.md (VSCode)"
+        $locations["VSCode POLICY_DEV.md"] = Join-Path $mcpRoot "POLICY_DEV.md"
+        if ($Scope -eq "Workspace") {
+          $agentsPath = Join-Path $wsRoot "AGENTS.md"
+          if (-not (Test-Path -LiteralPath $agentsPath)) {
+            Install-FromTemplate -TemplateName "AGENTS.md.snippet" -DestPath $agentsPath `
+              -PoliciesPath $policiesPath -SkillsHint ".vscode/skills" -Label "AGENTS.md (VSCode)"
+            $locations["AGENTS.md"] = $agentsPath
+          } else {
+            Write-Host "OK skip AGENTS.md (already exists): $agentsPath"
+          }
+        }
+      }
+      if (-not $SkipMcpSnippet) {
+        Install-FromTemplate -TemplateName "mcp.json.snippet" -DestPath (Join-Path $mcpRoot "mcp.json.policy-dev.snippet") `
+          -PoliciesPath $policiesPath -SkillsHint ".vscode/skills" -Label "MCP snippet (VSCode)"
+        $locations["VSCode MCP snippet"] = Join-Path $mcpRoot "mcp.json.policy-dev.snippet"
+      }
+    }
+    "Cline" {
+      $skillsRoot = Join-Path $wsRoot ".cline\skills"
+      $mcpRoot = Join-Path $wsRoot ".cline"
+      foreach ($name in $SkillNames) {
+        Install-SkillDir -Name $name -DestSkillsRoot $skillsRoot
+      }
+      $locations["Cline skills"] = $skillsRoot
+      if (-not $SkipPointers) {
+        Install-FromTemplate -TemplateName "POLICY_DEV.md" -DestPath (Join-Path $mcpRoot "POLICY_DEV.md") `
+          -PoliciesPath $policiesPath -SkillsHint ".cline/skills" -Label "POLICY_DEV.md (Cline)"
+        $locations["Cline POLICY_DEV.md"] = Join-Path $mcpRoot "POLICY_DEV.md"
+
+        $clinerulesPath = Join-Path $wsRoot ".clinerules"
+        if (-not (Test-Path -LiteralPath $clinerulesPath) -or $Force) {
+          Install-FromTemplate -TemplateName "POLICY_DEV.md" -DestPath $clinerulesPath `
+            -PoliciesPath $policiesPath -SkillsHint ".cline/skills" -Label ".clinerules (Cline)"
+          $locations["Cline .clinerules"] = $clinerulesPath
+        }
+      }
+      if (-not $SkipMcpSnippet) {
+        Install-FromTemplate -TemplateName "mcp.json.snippet" -DestPath (Join-Path $mcpRoot "cline_mcp_settings.json.policy-dev.snippet") `
+          -PoliciesPath $policiesPath -SkillsHint ".cline/skills" -Label "MCP snippet (Cline)"
+        $locations["Cline MCP snippet"] = Join-Path $mcpRoot "cline_mcp_settings.json.policy-dev.snippet"
+      }
+      if ($Scope -eq "Global") {
+        # 1. Update VS Code extension Cline settings
+        $appData = if ($env:APPDATA) { $env:APPDATA } else { Join-Path $wsRoot "AppData\Roaming" }
+        $clineVsCodeSettings = Join-Path $appData "Code\User\globalStorage\saoudrizwan.claude-dev\settings\cline_mcp_settings.json"
+        Update-ClineMcpSettings -FilePath $clineVsCodeSettings -McpUrl $McpUrl
+        $locations["Cline VSCode MCP Config"] = $clineVsCodeSettings
+        Write-Host "OK Cline VSCode MCP config updated: $clineVsCodeSettings"
+
+        # 2. Update standalone ~/.cline data settings if directory exists or in global scope
+        $clineDataSettings = Join-Path $wsRoot ".cline\data\settings\cline_mcp_settings.json"
+        Update-ClineMcpSettings -FilePath $clineDataSettings -McpUrl $McpUrl
+        $locations["Cline Data MCP Config"] = $clineDataSettings
+        Write-Host "OK Cline Data MCP config updated: $clineDataSettings"
+      }
+    }
     "Generic" {
       $skillsRoot = Join-Path $wsRoot "skills"
       foreach ($name in $SkillNames) {
@@ -349,6 +451,10 @@ $setupDir = if ($platforms -contains "Cursor") {
   Join-Path $wsRoot ".claude"
 } elseif ($platforms -contains "Antigravity") {
   Join-Path $wsRoot ".agents"
+} elseif ($platforms -contains "VSCode") {
+  Join-Path $wsRoot ".vscode"
+} elseif ($platforms -contains "Cline") {
+  Join-Path $wsRoot ".cline"
 } else {
   $wsRoot
 }

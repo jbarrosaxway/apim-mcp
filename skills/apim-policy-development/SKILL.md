@@ -86,15 +86,62 @@ Open **apim-policies** for package READMEs, E2E tests, and deploy workflows. Do 
 
 ```
 Progress:
-- [ ] 1. Clarify goal (Send alert? Receive HTTP? Lookup local APIM? Route?)
-- [ ] 2. RAG: open matching docs/rag pages (filters, listeners, import)
-- [ ] 3. Choose filter types (prefer API Management Read * for local registry reads)
-- [ ] 4. Author YAML fragment (estrutura 3b: Root, System, types junction, HTTP listener, `_fragment.yaml`)
-- [ ] 5. Validate: checklist → yamles → PS import; MCP conforme árvore abaixo
-- [ ] 6. YAML→XML: `axway_apim_fragment_yaml_to_xml` if target is XML FED
-- [ ] 7. Optional: `axway_apim_fragment_sync_ps_project` before opening ps-project in Policy Studio
-- [ ] 8. Import into Policy Studio project / FED
+- [ ] 1. Download active FED & Detect format (XML vs YAML Entity Store)
+- [ ] 2. Clarify goal (Send alert? Receive HTTP? Lookup local APIM? Route?)
+- [ ] 3. RAG: open matching docs/rag pages (filters, listeners, import)
+- [ ] 4. Choose filter types (prefer API Management Read * for local registry reads)
+- [ ] 5. Author fragment (YAML structure 3b: Root, System, types junction, HTTP listener, `_fragment.yaml`)
+- [ ] 6. Validate: checklist → validate-fragment-generic.py / MCP validate_submit
+- [ ] 7. Adapt to target FED format: if XML FED, convert via `axway_apim_fragment_yaml_to_xml`
+- [ ] 8. Import / Merge into active FED (Policy Studio or automated package merge)
+- [ ] 9. Deploy to K8s `/merge` volume & verify rollout
 ```
+
+### 0. Download Active FED & Format Detection (XML vs YAML)
+
+Before authoring, converting, or importing policies, the agent **MUST** download the active FED and verify whether the runtime entity store is **XML** or **YAML**.
+
+#### A. Download Active FED
+
+1. Discover `instanceId` and topology:
+   - Run MCP tool `axway_apim_topology_list` (note `instanceId` and `serviceType`).
+2. Download deployment archive (`.fed`):
+   - **Via MCP tool (recommended):**
+     ```json
+     axway_apim_deployment_archive_get(
+       "serviceId": "<instanceId>",
+       "savePath": "./current-active.fed"
+     )
+     ```
+   - **Via Shell / REST API:**
+     ```bash
+     curl -sk -u "${AXWAY_GATEWAY_USERNAME}:${AXWAY_GATEWAY_PASSWORD}" \
+       "${AXWAY_GATEWAY_URL}/deployment/archive/service/${INSTANCE_ID}" \
+       -H "Accept: application/json" -o /tmp/fed-response.json
+     # extract data base64 into current-active.fed
+     ```
+
+#### B. Extract & Detect Entity Store Format (XML vs YAML)
+
+Extract the downloaded FED (ZIP format):
+```powershell
+# Windows
+powershell -File skills/apim-gateway-code-analysis/scripts/extract-fed.ps1 -FedPath "current-active.fed" -OutDir "fed-extract"
+```
+```bash
+# Linux
+bash skills/apim-gateway-code-analysis/scripts/extract-fed.sh current-active.fed /tmp/fed-extract
+```
+
+Inspect the extracted root files:
+
+| File Signature in Archive | Entity Store Format | Action Required Before Import |
+|---------------------------|---------------------|-------------------------------|
+| `PrimaryStore.xml` / `EntityStore.xml` / `Configs.xml` | **XML FED (Federated Store)** | **MANDATORY CONVERSION:** Author fragment in YAML, validate, then convert to XML Federated format via `axway_apim_fragment_yaml_to_xml` (or `yaml-frag-to-xml.py`) before importing into the FED. Direct injection of YAML into XML store is invalid. |
+| `PrimaryStore.yaml` / `configs.yaml` / `values/` | **YAML FED (YAML Entity Store)** | Fragments in YAML can be validated and merged directly into the YAML store. |
+
+> ⚠️ **CRITICAL AGENT ALERT:**
+> Always inform the user of the detected format (e.g. *"Target FED format detected: XML Federated Entity Store"* or *"YAML Entity Store"*) and explicitly state the conversion / import strategy before modifying or importing policies.
 
 ### 1. Goal → pattern
 
@@ -315,8 +362,103 @@ Local shell equivalents:
 
 ```bat
 yamles validate -s yaml:file:.\fragment -p ""
+
+### 8. Import & Merge into FED (Workflows)
+
+Once the fragment is authored, validated, and converted (if needed):
+
+#### Workflow A: Import via Policy Studio (UI)
+1. **Open Active FED:** In Policy Studio, select `File` → `Open` → `Deployment Archive (.fed)` and select the downloaded `current-active.fed`.
+2. **Import Fragment:**
+   - **If XML FED:** Select `File` → `Import` → `Configuration Fragment` → select the converted XML fragment file (e.g. `fragment-xml/*-fragment.xml`). Leave passphrase empty.
+   - **If YAML FED:** Select `File` → `Import` → `Configuration Fragment` → select the `fragment/` folder root.
+3. **Verify Imported Artifacts:**
+   - Confirm policies are visible under `Policies` tree.
+   - Confirm Listeners / Paths are registered under `Environment Configuration` → `Listeners`.
+   - If Portal Alerts were added, check `API Manager Traffic` → `Portal Alerts`.
+4. **Export Updated FED:**
+   - Select `File` → `Export` → `Deployment Package (.fed)`.
+   - Save as `fed.fed` (ready for deployment).
+
+#### Workflow B: Automated `ps-project` Sync (Headless / Repo)
+When working with policy packages containing a `ps-project-with-sync/` structure:
+1. Run `axway_apim_fragment_sync_ps_project` to synchronize `fragment/` modifications into `ps-project-with-sync/`.
+2. Package the project into a `.fed` using `projpack` (or Axway CI build pipeline).
+
 # Package-specific scripts: see apim-policies/policies/<package>/scripts/
 ```
+
+
+---
+
+## 9. Deploy Strategy & Kubernetes `/merge` Volume Lifecycle
+
+When deploying newly authored or modified policies (`.fed` or YAML packages) to Axway API Gateway environments running on Kubernetes (e.g. `apim-lab` or production), the AI agent must base its deployment strategy on the canonical scripts in this repository:
+
+### Core Scripts Reference
+
+1. **Validation Engine:** [`resources/fragment/scripts/validate-fragment-generic.py`](../../resources/fragment/scripts/validate-fragment-generic.py)
+   - Python / Jython validator for checking entity graph integrity, `_parent.yaml`, `META-INF/_fragment.yaml` directives (`addIfAbsent`/`addOrReplace`), and PK references before packaging into a FED.
+   - Usable locally via Python 3 / Jython or remotely via MCP tool `axway_apim_fragment_validate_submit`.
+
+2. **K8s Deploy & Rollout Helper:** [`scripts/deploy-gateway-fed-helpers.ps1`](../../scripts/deploy-gateway-fed-helpers.ps1)
+   - Encapsulates target pod resolution (`Get-ApimgrPodName`), artifact copying (`Copy-ArtifactToPod`), and rollout orchestration (`Restart-Deployments` / `Wait-DeploymentsReady`).
+
+### The Kubernetes `/merge` Architecture
+
+In Axway Gateway containerized topologies (see `values-apim-lab-*.yaml` / `values-*.yaml`):
+- Both `apimgr` and `apitraffic` pods mount a persistent configuration volume at **/merge** (`mountPath: /merge`, e.g. `gw-external-config-lab` PVC).
+- Upon pod startup / restart, the Axway Gateway engine merges external FED archives located at `/merge/fed.fed` or YAML packages at `/merge/yaml.tar.gz`.
+
+### Standard Deployment Lifecycle (Agent Playbook)
+
+Follow this 4-step sequence for end-to-end policy rollout:
+
+```
+[ Step 1: Validate ] ──────> [ Step 2: Package/Export ] ──────> [ Step 3: Copy to /merge ] ──────> [ Step 4: Rollout & Verify ]
+ validate-fragment-generic.py    Generate .fed or yaml.tar.gz    deploy-gateway-fed-helpers.ps1     rollout restart + MCP checks
+```
+
+#### Step 1: Pre-flight Validation
+Run the generic fragment validator against the policy workspace:
+```bash
+python3 resources/fragment/scripts/validate-fragment-generic.py --fragment-path <path/to/fragment>
+# OR via MCP tool:
+# axway_apim_fragment_validate_submit(files={...})
+```
+
+#### Step 2: Artifact Preparation
+Ensure the compiled `.fed` (e.g. `fed.fed`) or `yaml.tar.gz` is present in the staging folder.
+
+#### Step 3: Inject Artifact into Pod Volume (`/merge`)
+Use `scripts/deploy-gateway-fed-helpers.ps1` to upload the artifact directly to the `/merge` mount point of the target Gateway manager pod:
+```powershell
+# Dot-source the helper functions
+. scripts/deploy-gateway-fed-helpers.ps1
+
+# Define environment profile
+$profile = @{
+    Key           = "lab"
+    InstanceLabel = "apim-lab"
+    FedDest       = "/merge/fed.fed"
+    ApimgrDeploy  = "apim-lab-gateway-apimgr"
+    ApitrafficDeploy = "apim-lab-gateway-apitraffic"
+}
+
+# Copy FED to pod
+Copy-EnvironmentArtifacts -Profile $profile -Namespace "axway" -FedFile "path/to/fed.fed"
+```
+*(Under the hood, this executes `kubectl cp ./fed.fed axway/<pod-apimgr>:/merge/fed.fed -c gateway`)*.
+
+#### Step 4: Orchestrate Rollout & Verify Health
+Restart the Gateway deployments to apply the new merged configuration and monitor status:
+```powershell
+Restart-AndWait-Environment -Profile $profile -Namespace "axway" -TimeoutSeconds 300
+```
+Verify the active runtime state with MCP tools:
+- `axway_apim_topology_list`: Confirm all instances report active and running.
+- `axway_apim_deployment_archive_get`: Confirm the merged `.fed` active in the runtime.
+- `axway_apim_traffic_search`: Validate live proxy responses.
 
 ### 5. Import
 

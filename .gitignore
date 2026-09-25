@@ -19,3 +19,9 @@ tmp-*
 helm/registry/
 k8s/
 
+# Helm values containing licenses/secrets and local configs
+values-*.yaml
+*.fed
+*.tar.gz
+.vscode/mcp.json*
+

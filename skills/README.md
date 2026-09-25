@@ -26,9 +26,10 @@ Every AI coding assistant has a preferred discovery path for skills and project 
 | Agent / IDE | Discovery Path | Project Instructions | MCP Configuration |
 |-------------|----------------|----------------------|-------------------|
 | **Cursor** | `.cursor/skills/` (mirrored) | `.cursor/rules/apim-policy-development.mdc` | `.cursor/mcp.json` |
+| **VS Code** | `.vscode/skills/` or `skills/` | `.vscode/POLICY_DEV.md` or `AGENTS.md` | `~/.vscode/mcp.json` / `.vscode/mcp.json` |
 | **Google Antigravity** | `.agents/skills/` or global `~/.gemini/config/skills/` | `AGENTS.md` / `GEMINI.md` | `mcp_config.json` |
 | **Claude Code** | `.claude/skills/` | `CLAUDE.md` | `claude_desktop_config.json` / `claude.json` |
-| **Cline / Roo Code** | `skills/` | `.clinerules` or `AGENTS.md` | `cline_mcp_settings.json` |
+| **Cline / Roo Code** | `skills/` or `.vscode/skills/` | `.clinerules` or `AGENTS.md` | `cline_mcp_settings.json` / `~/.vscode/mcp.json` |
 | **Windsurf / Cascade** | `skills/` | `.windsurfrules` or `AGENTS.md` | `mcp_config.json` |
 | **Open Standards** | `skills/` | `AGENTS.md` | `mcp.json.example` |
 
