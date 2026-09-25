@@ -25,7 +25,7 @@ param(
 
   [string]$PoliciesRepoPath = "",
 
-  [string]$McpUrl = "https://mcp.example.com/mcp",
+  [string]$McpUrl = "https://apim-mcp.gnosistech.com.br",
 
   [switch]$SkipRule,
   [switch]$SkipMcpSnippet,
