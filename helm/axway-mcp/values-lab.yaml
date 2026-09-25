@@ -1,0 +1,45 @@
+# Values for Axway MCP targeting APIM Lab environment (apim-lab)
+# Merge with secret values file:
+#   helm upgrade --install axway-mcp ./helm/axway-mcp -n axway \
+#     -f ./helm/axway-mcp/values-lab.yaml \
+#     -f ./helm/axway-mcp/values-lab-secret.yaml
+
+replicaCount: 1
+
+image:
+  repository: axwayjbarros/apim-mcp
+  pullPolicy: IfNotPresent
+  tag: "1.0.17-axway-std"
+
+env:
+  TRANSPORT_MODE: "http"
+  PORT: "3000"
+  TZ: "America/Sao_Paulo"
+
+  # URLs targeting apim-lab in the 'axway' namespace (ClusterIP / Service DNS)
+  AXWAY_GATEWAY_URL: "https://apim-lab-anm.axway.svc.cluster.local:8090/api"
+  AXWAY_MANAGER_URL: "https://apim-lab-gateway-apimgr.axway.svc.cluster.local:8075/api/portal/v1.4"
+
+  # Insecure / Self-signed certificate support for lab environments
+  AXWAY_TLS_REJECT_UNAUTHORIZED: "false"
+  AXWAY_TLS_INSECURE: "true"
+
+  # Auth configuration (set to "none" or "oidc" according to your cluster setup)
+  MCP_AUTH_DISABLED: "false"
+  MCP_AUTH_MODE: "none"
+  MCP_DEPLOYMENT_PROFILE: "observer"
+  MCP_RESOURCE_URL: "https://apim-mcp.gnosistech.com.br"
+  MCP_REQUIRED_SCOPES: "mcp:observe"
+
+# Secret name where credentials will be loaded from
+secrets:
+  name: "axway-mcp-credentials-lab"
+  create: false  # When merging with values-lab-secret.yaml, set create: true or create Secret separately
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+
+ingress:
+  enabled: false
