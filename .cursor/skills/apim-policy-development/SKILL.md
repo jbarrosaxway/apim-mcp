@@ -213,6 +213,51 @@ To deliver policies for an **XML Federated FED** environment:
 | Execute Groovy script | `JavaScriptFilter` with fake fields | `JavaScriptFilter` with `engineName: groovy` and `script: {{file "script.groovy"}}` |
 | Mask errors / Fault handler | Guessed fault handlers | `FaultHandler` / `CompareAttributeFilter` + `ChangeMessageFilter` (RFC 7807) |
 
+
+### 3b. Enterprise Scenario Recipes & Canonical Axway Filter Patterns
+
+When designing policies for common enterprise and PoC requirements, use the canonical Axway patterns below:
+
+#### Recipe 1: B2B Identity, Dynamic JWT Signing & Form Transformation
+- **Dynamic JWT Signing (RS256):** Use `GenerateJWTFilter` referencing the private key in the Certificate Store (or a Groovy `JavaScriptFilter` using Nimbus JOSE `com.nimbusds.jose.*` / `com.nimbusds.jwt.*` with Gateway private key).
+  - Runtime variables (UUID, `exp = now + 60s`, `aud`, `iss`) should be set in Gateway message attributes (`jti`, `jwt.exp`) via `SetAttributeFilter` or Groovy.
+- **JSON to `application/x-www-form-urlencoded` Transformation:**
+  - Extract fields with `ExtractAttributesFilter` / Groovy into message attributes.
+  - Set the outbound form body using `ChangeMessageFilter` (`name: Set Message`, `body: grant_type=client_credentials&client_assertion_type=...&client_assertion=${client_assertion}`, `outputContentType: application/x-www-form-urlencoded`).
+- **Outbound mTLS:** `ConnectToURLFilter` with `sslClientCertAlias: <alias-of-client-cert-in-store>`.
+
+#### Recipe 2: High-Security Payload Cryptography (Nested JWE/JWS)
+- **Inbound mTLS Enforcement:** Configure `clientAuth: 2` (Require Client Certificate) on the `InetInterface` or use `ExtractCertificateAttributesFilter` on the `XMLFirewall`.
+- **Path Bypass (`/ping`):** Use `CompareAttributeFilter` matching `http.request.uri` with regex `^/acctmgmt/ping.*` routing immediately to the ping backend.
+- **Inbound JWE Decrypt + JWS Verify:**
+  - Decrypt JWE: `JWEFilter` (Action: Decrypt) with `keyAlias: <gateway-private-key>` ➔ reveals signed JWS payload.
+  - Verify JWS: `VerifyJWTFilter` / `JWSFilter` with `verificationKeyAlias: <partner-public-cert>`.
+- **Outbound JWS Sign + JWE Encrypt:**
+  - Sign response: `GenerateJWTFilter` with `privateKeyAlias: <gateway-jws-signing>`.
+  - Encrypt response: `JWEFilter` (Action: Encrypt, Alg: `RSA-OAEP-256`, Enc: `A256GCM`) with `recipientCertAlias: <partner-public-cert>` and `outputContentType: application/jose`.
+
+#### Recipe 3: High-Throughput & Large Payload Streaming (Up to 100MB)
+- Never buffer large files in memory or Groovy strings.
+- In `ConnectToURLFilter`, configure:
+  - `streamRequest: 1`
+  - `streamResponse: 1`
+  - In `HTTP Interface` / `XMLFirewall`, set max message payload threshold and disk-spool threshold.
+
+#### Recipe 4: Enterprise Error Masking (RFC 7807 Problem Details)
+- Intercept 4xx/5xx responses from backend:
+  - In `ConnectToURLFilter` or downstream, evaluate `http.response.status >= 400` using `CompareAttributeFilter`.
+  - Format RFC 7807 response using `ChangeMessageFilter`:
+    ```json
+    {
+      "type": "https://api.dillards.com/errors/gateway-upstream-error",
+      "title": "Bad Gateway",
+      "status": 502,
+      "detail": "An error occurred while communicating with the upstream service.",
+      "instance": "/errors/${circuit.invocation.id}"
+    }
+    ```
+  - Set `outputContentType: application/problem+json` and `httpResponseStatus: 502`.
+
 ### 3b. Configuration Fragment — estrutura importável (PS 7.7)
 
 Obrigatório para import YAML sem *Could not load YAML Entity Store*:
