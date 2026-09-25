@@ -441,6 +441,9 @@ Paths típicos no mapa `files`:
 | **1 — Axway libs** | yamles/import dry-run via validate; `axway_apim_fragment_yaml_to_xml` | `gatewayHome` resolvido: parâmetro, `instanceId`+mapeamento, `AXWAY_GATEWAY_HOME`, ou `config/axway-gateway-homes.json` |
 
 Diagnóstico de mapeamento: `axway_apim_fragment_gateway_resolve`. Copiar `config/axway-gateway-homes.example.json` → `config/axway-gateway-homes.json`.
+> 💡 **Default Local Axway Installation (Windows):**
+> On Windows workstations, the standard Axway Gateway runtime is installed at `C:\Axway-7.7.20260228` with binaries at `C:\Axway-7.7.20260228\apigateway\Win32\bin` (`jython.bat`, `yamles.bat`, `projpack.bat`). Agents can invoke these utilities directly or configure `gatewayHome: "C:\\Axway-7.7.20260228"`.
+
 
 Local shell equivalents:
 
