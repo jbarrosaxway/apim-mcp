@@ -174,6 +174,45 @@ Only **Read Organization** supports lookup by **Name** (`selects: Name`). App/Pr
 
 Repo examples: **apim-policies** repo (e.g. `example-policy-package/`). Template: `apim-policies/policies/PACKAGE-README-TEMPLATE.md`.
 
+
+### 3a. CRITICAL RULE: NEVER AUTHOR RAW XML BY HAND (Anti-pattern Alert)
+
+> ⛔ **ABSOLUTE PROHIBITION FOR AGENTS:**
+> **NEVER generate raw `.xml` policy fragments by hand / text concatenation.**
+> Hand-crafting XML files (such as `*-fragment.xml`) without the Axway compilation engine always causes catastrophic failures (*"Entity type not registered"*, *"Invalid ESPK reference"*, *"Corrupted entity store"*, *"Policy Studio XML unmarshalling error"*).
+
+#### Why Hand-crafted XML Fails in Axway:
+1. **Strict Type Hierarchy:** Every entity `<entity type="...">` must match the exact class schema registered in Axway's `system/conf/types.xml`. Hallucinated or guessed names like `ExtractRESTAttributesFilter`, `JWTSignFilter`, `JWEEncryptFilter`, `StreamPayloadFilter`, or `ReflectedMessageFilter` **do not exist** in the Axway runtime and will immediately crash the Gateway / Policy Studio upon import.
+2. **Missing Circuit Execution Graph:** Axway `FilterCircuit` entities require complex internal graphs: `startNode` pointer, `<key type="Filter">` references, success/failure branches (`successNode`, `failureNode`), and PK resolution. Guessed XML lacks these graph links, making circuits unexecutable.
+3. **Internal ESPK & Passphrase Hash:** Field values, references to external certificates, and system stores require internal entity key hashes that only the Axway Entity Store engine generates.
+
+#### The Canonical Path to Produce XML Fragments:
+To deliver policies for an **XML Federated FED** environment:
+1. **Author the policy exclusively in YAML format** under `fragment/Policies/...`, `fragment/System/...`, `fragment/META-INF/_fragment.yaml`, adhering to section `3b`.
+2. **Validate the YAML fragment** using `resources/fragment/scripts/validate-fragment-generic.py` or MCP tool `axway_apim_fragment_validate_submit`.
+3. **Convert YAML to Federated XML via MCP tool:**
+   ```json
+   axway_apim_fragment_yaml_to_xml({
+     "fragmentPath": "<path-to-package-root>",
+     "targetDir": "<output-directory-for-xml>"
+   })
+   ```
+   *This tool uses Axway's native `yamles` compiler inside the container to emit 100% compliant, production-grade Federated XML.*
+4. **Alternative (Desktop):** Import the `fragment/` folder into Policy Studio (YAML mode) and use `File` → `Export` → `Configuration Fragment` (XML).
+
+#### Common Filter Type Mapping (Real vs Hallucinated)
+
+| Intended Goal | ❌ DO NOT USE (Hallucinated) | ✅ REAL AXWAY FILTER / PATTERN |
+|---------------|------------------------------|--------------------------------|
+| Return response to client | `ReflectedMessageFilter` | `ReflectMessageFilter` |
+| Stream large payloads | `StreamPayloadFilter` | `ConnectToURLFilter` with `streamRequest: 1` / `streamResponse: 1` |
+| Generate / Sign JWT | `JWTSignFilter` | `GenerateJWTFilter` (or Groovy script using Nimbus JOSE `com.nimbusds.jwt.*`) |
+| Encrypt payload (JWE) | `JWEEncryptFilter` | `JWEFilter` (or Groovy script) |
+| Extract REST query/path attributes | `ExtractRESTAttributesFilter` | `ExtractAttributesFilter` / `SetAttributeFilter` / Path template on HTTP Service |
+| Transform JSON / Form | `TransformFilter` | `ChangeMessageFilter` (`name: Set Message`, `outputContentType: ...`) |
+| Execute Groovy script | `JavaScriptFilter` with fake fields | `JavaScriptFilter` with `engineName: groovy` and `script: {{file "script.groovy"}}` |
+| Mask errors / Fault handler | Guessed fault handlers | `FaultHandler` / `CompareAttributeFilter` + `ChangeMessageFilter` (RFC 7807) |
+
 ### 3b. Configuration Fragment — estrutura importável (PS 7.7)
 
 Obrigatório para import YAML sem *Could not load YAML Entity Store*:

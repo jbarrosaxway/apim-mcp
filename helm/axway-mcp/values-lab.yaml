@@ -1,45 +1,49 @@
 # Values for Axway MCP targeting APIM Lab environment (apim-lab)
-# Merge with secret values file:
+# Merge with secret values file or existing secret:
 #   helm upgrade --install axway-mcp ./helm/axway-mcp -n axway \
-#     -f ./helm/axway-mcp/values-lab.yaml \
-#     -f ./helm/axway-mcp/values-lab-secret.yaml
+#     -f ./helm/axway-mcp/values-lab.yaml
 
 replicaCount: 1
 
 image:
-  repository: axwayjbarros/apim-mcp
+  repository: 10.129.146.53:30500/apim-mcp
   pullPolicy: IfNotPresent
-  tag: "1.0.17-axway-std"
+  tag: "1.0.30-pcloud-apimgr-base"
 
 env:
   TRANSPORT_MODE: "http"
   PORT: "3000"
   TZ: "America/Sao_Paulo"
 
-  # URLs targeting apim-lab in the 'axway' namespace (ClusterIP / Service DNS)
-  AXWAY_GATEWAY_URL: "https://apim-lab-anm.axway.svc.cluster.local:8090/api"
+  # Internal cluster DNS targeting apim-lab in the 'axway' namespace
+  AXWAY_GATEWAY_URL: "https://apim-lab-gateway-anm.axway.svc.cluster.local:8090/api"
   AXWAY_MANAGER_URL: "https://apim-lab-gateway-apimgr.axway.svc.cluster.local:8075/api/portal/v1.4"
 
   # Insecure / Self-signed certificate support for lab environments
   AXWAY_TLS_REJECT_UNAUTHORIZED: "false"
   AXWAY_TLS_INSECURE: "true"
 
-  # Auth configuration (set to "none" or "oidc" according to your cluster setup)
-  MCP_AUTH_DISABLED: "false"
+  # Auth configuration
+  MCP_AUTH_DISABLED: "true"
   MCP_AUTH_MODE: "none"
   MCP_DEPLOYMENT_PROFILE: "observer"
+  OIDC_ISSUER: "https://idp.gnosistech.com.br/realms/apim-mcp"
+  OIDC_AUDIENCE: "apim-mcp-api"
   MCP_RESOURCE_URL: "https://apim-mcp.gnosistech.com.br"
   MCP_REQUIRED_SCOPES: "mcp:observe"
 
-# Secret name where credentials will be loaded from
+  AXWAY_GATEWAY_HOME: "/opt/Axway"
+  FRAGMENT_CLEANUP_ENABLED: "true"
+  FRAGMENT_ARTIFACT_MAX_AGE_MS: "86400000"
+  FRAGMENT_UPLOAD_MAX_BYTES: "10485760"
+
+# Secret name where credentials will be loaded from (uses existing 'axway-mcp-credentials' in namespace)
 secrets:
-  name: "axway-mcp-credentials-lab"
-  create: false  # When merging with values-lab-secret.yaml, set create: true or create Secret separately
+  name: "axway-mcp-credentials"
+  create: false
 
 service:
   type: ClusterIP
   port: 80
   targetPort: 3000
 
-ingress:
-  enabled: false
