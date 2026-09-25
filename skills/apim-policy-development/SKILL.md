@@ -579,16 +579,87 @@ Padrão do repo: `Build App Status Request`, `Build Delete App Request` usam con
 
 **FED/XML:** import repetido do fragment XML pode **não** substituir scripts já embutidos em `PrimaryStore.xml` — validar no projeto (`PrimaryStore.xml` ou grep no pod) antes de `export-fed`. Se necessário, patch manual + re-export.
 
-## Headless Policy Studio (sem UI)
+## Headless Policy Studio (Programmatic & CLI Automation)
 
-Policy Studio **não tem CLI de import** — usar **yamles** + Jython **EntityStoreAPI** no `GatewayHome` alinhado à topologia.
+O Policy Studio Desktop não possui um executável CLI direto próprio, mas a Axway fornece os binários e JARs runtime oficiais dentro do diretório do **API Gateway (`$AXWAY_GATEWAY_HOME/apigateway`)** para manipulação 100% programática de projetos e FEDs:
 
-| Projeto | ES | Import | Export |
-|---------|-----|--------|--------|
-| **YAML project** | YAML (`yamles`) | `yamles import -s fragment -t <yaml-project> -ar -c -r` (**1×**; reimport → `DuplicateKeysException`) | `tar` do project → `yaml.tar.gz` |
-| **Federated/XML** | Federated/XML | Jython `importConf` no `configs.xml` (repetível) | `DeploymentArchive(<fed-project>)` → `.fed` (**não** `configs.xml` isolado) |
+---
 
-Scripts de import/export: ver README do pacote em **apim-policies** (ex. `example-policy-package`).
+### 1. Toolchain Programático Disponível
+
+| Tecnologia / Binário | Onde Executa | Tipo de Projeto | Objetivo Principal |
+|---|---|---|---|
+| **`yamles`** | `apigateway/posix/bin/yamles` (ou `Win32\bin\yamles.bat`) | YAML Entity Store | Validação e importação programática de fragmentos YAML em projetos YAML. |
+| **Jython + `EntityStoreAPI`** | `apigateway/posix/bin/jython` (ou `Win32\bin\jython.bat`) | XML Federated & YAML | Executa scripts Python usando os JARs da Axway (`vordel-core.jar`, `vordel-es.jar`, `vordel-archive.jar`). |
+| **`projpack`** | `apigateway/posix/bin/projpack` | Qualquer Projeto | Empacota uma pasta de projeto Policy Studio diretamente em arquivo `.fed`. |
+| **MCP Tools (`Tier 1`)** | Servidor MCP (`axway-mcp`) | YAML & XML | `axway_apim_fragment_yaml_to_xml` executa o compilador Axway dentro do container. |
+
+---
+
+### 2. Automação Programática em Projetos YAML (`yaml.tar.gz`)
+
+1. **Importar o fragmento YAML no projeto:**
+   ```bash
+   yamles import -s ./policies/dillards-poc -t ./gateway-yaml-project -ar -c -r
+   ```
+   *(Flags: `-ar` = addOrReplace, `-c` = commit, `-r` = recursive)*
+
+2. **Empacotar para deploy em Kubernetes `/merge`:**
+   ```bash
+   tar -czf yaml.tar.gz -C ./gateway-yaml-project .
+   ```
+
+---
+
+### 3. Automação Programática em Projetos XML Federated (`.fed`)
+
+Para importar fragmentos XML em um projeto FED Federated sem abrir a interface gráfica do Policy Studio, utiliza-se o Jython nativo do Gateway carregando as classes `com.vordel.es.*` e `com.vordel.archive.*`:
+
+#### Exemplo Canônico de Script Jython (`import_fragment_and_pack.py`):
+```python
+import sys
+from com.vordel.es import EntityStoreFactory
+from com.vordel.es.impl.federated import FederatedEntityStore
+from com.vordel.archive import DeploymentArchive
+
+# 1. Carregar Entity Store do Projeto XML
+project_dir = sys.argv[1]   # ex: ./gateway-fed-project
+fragment_xml = sys.argv[2]  # ex: ./policies/dillards-poc-xml/dillards-poc-fragment.xml
+output_fed = sys.argv[3]    # ex: ./gateway.fed
+
+url = "federated:file:" + project_dir + "/configs.xml"
+es = EntityStoreFactory.createEntityStore(url)
+es.connect(url, {})
+
+# 2. Importar o fragmento XML validado
+print("[i] Importing XML fragment into Federated Entity Store...")
+es.importConfiguration(fragment_xml)
+
+# 3. Gerar o FED empacotado (.fed) com a classe DeploymentArchive nativa
+print("[i] Packaging into Deployment Archive (.fed)...")
+archive = DeploymentArchive(project_dir)
+archive.write(output_fed)
+print("[✔] Successfully generated FED: " + output_fed)
+```
+
+#### Como executar via CLI/Script:
+```powershell
+# Windows
+& "$env:AXWAY_GATEWAY_HOME\apigateway\Win32\bin\jython.bat" import_fragment_and_pack.py ./gateway-fed-project ./policies/dillards-poc-xml/dillards-poc-fragment.xml ./gateway.fed
+```
+```bash
+# Linux / Container
+$AXWAY_GATEWAY_HOME/apigateway/posix/bin/jython import_fragment_and_pack.py ./gateway-fed-project ./policies/dillards-poc-xml/dillards-poc-fragment.xml ./gateway.fed
+```
+
+---
+
+### 4. Empacotamento via `projpack` CLI
+
+Se o projeto já contém os arquivos sincronizados:
+```bash
+projpack --project ./gateway-fed-project --output ./gateway.fed
+```
 
 **PRD `yaml.tar.gz`:** baseline do pod (snapshot) → `yamles upgrade` → **single** `yamles import` do `fragment/` (fix type `Cache` se v2→v3). Não re-exportar o projeto YAML após múltiplos imports.
 
