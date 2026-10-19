@@ -1,0 +1,42 @@
+# EKS UAT - namespace axway-new
+# Case: CASE-2026-OBS01
+# Auth disabled + observe profile (observability)
+replicaCount: 1
+
+image:
+  repository: 815688650833.dkr.ecr.us-east-1.amazonaws.com/apim-mcp
+  pullPolicy: Always
+  tag: "1.0.17-axway-std-eks"
+
+env:
+  TRANSPORT_MODE: "http"
+  PORT: "3000"
+  TZ: "America/Sao_Paulo"
+
+  AXWAY_GATEWAY_URL: "https://axway-apim-new-apigateway-tst-new-anm.axway-new.svc.cluster.local:8090/api"
+  AXWAY_MANAGER_URL: "https://axway-apim-new-apigateway-tst-new-apimgr.axway-new.svc.cluster.local:8075/api/portal/v1.4"
+
+  AXWAY_TLS_REJECT_UNAUTHORIZED: "false"
+  AXWAY_TLS_INSECURE: "false"
+
+  MCP_AUTH_DISABLED: "true"
+  MCP_AUTH_MODE: "none"
+  MCP_DEPLOYMENT_PROFILE: "observe"
+  OIDC_ISSUER: ""
+  OIDC_AUDIENCE: ""
+  MCP_RESOURCE_URL: "https://apim-mcp-new.uat.case-obs01.intranet"
+  MCP_REQUIRED_SCOPES: "mcp:observe"
+
+secrets:
+  create: false
+  name: axway-mcp-credentials
+
+service:
+  type: ClusterIP
+  port: 80
+  targetPort: 3000
+
+overlay:
+  enabled: true
+  image: "busybox:1.36"
+  configMapName: "apim-mcp-runtime-overlay"
