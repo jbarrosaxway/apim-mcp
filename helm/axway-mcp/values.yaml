@@ -86,3 +86,10 @@ probes:
       port: 3000
     initialDelaySeconds: 5
     periodSeconds: 10
+
+# Runtime code overlay (ConfigMap with build + skills tarball without rebuilding container image)
+overlay:
+  enabled: false
+  image: "busybox:1.36"
+  configMapName: "apim-mcp-runtime-overlay"
+

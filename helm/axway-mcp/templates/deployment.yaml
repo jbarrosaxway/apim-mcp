@@ -126,5 +126,37 @@ spec:
             initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
           {{- end }}
+          {{- if and .Values.overlay .Values.overlay.enabled }}
+          volumeMounts:
+            - name: app-build
+              mountPath: /app/build
+            - name: app-skills
+              mountPath: /app/.cursor/skills/apim-gateway-code-analysis
+          {{- end }}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+      {{- if and .Values.overlay .Values.overlay.enabled }}
+      initContainers:
+        - name: apim-mcp-overlay
+          image: {{ .Values.overlay.image | default "busybox:1.36" | quote }}
+          imagePullPolicy: IfNotPresent
+          command:
+            - sh
+            - -c
+            - mkdir -p /staging && tar -xzf /overlay/overlay.tar.gz -C /staging && cp -a /staging/build/. /app/build/ && mkdir -p /app/.cursor/skills/apim-gateway-code-analysis && cp -a /staging/skills/. /app/.cursor/skills/apim-gateway-code-analysis/
+          volumeMounts:
+            - name: runtime-overlay
+              mountPath: /overlay
+            - name: app-build
+              mountPath: /app/build
+            - name: app-skills
+              mountPath: /app/.cursor/skills/apim-gateway-code-analysis
+      volumes:
+        - name: runtime-overlay
+          configMap:
+            name: {{ .Values.overlay.configMapName | default "apim-mcp-runtime-overlay" }}
+        - name: app-build
+          emptyDir: {}
+        - name: app-skills
+          emptyDir: {}
+      {{- end }}

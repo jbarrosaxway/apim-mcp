@@ -320,6 +320,20 @@ export async function authenticateHttpRequest(
 ): Promise<AuthInfo | null | false> {
   const config = loadAuthConfig();
   if (config.mode === "none") {
+    // If MCP_API_KEY is configured in env, validate against Authorization or x-api-key
+    const expectedApiKey = process.env.MCP_API_KEY?.trim();
+    if (expectedApiKey) {
+      const header = req.headers.authorization;
+      const xApiKey = req.headers["x-api-key"] as string | undefined;
+      const bearerToken = header && /^Bearer\s+/i.test(header) ? header.replace(/^Bearer\s+/i, "").trim() : undefined;
+      const clientKey = xApiKey?.trim() || bearerToken || header?.trim();
+      if (clientKey !== expectedApiKey) {
+        res.writeHead(401, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "unauthorized", message: "Invalid API key" }));
+        return false;
+      }
+    }
+    // Auth disabled or API key valid: return null (handled by deployment profile)
     return null;
   }
 

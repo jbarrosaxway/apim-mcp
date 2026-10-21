@@ -1059,8 +1059,14 @@ ${titleEntries}
 
 export function parseToolProfile(value: string | undefined): ToolProfile | null {
   const v = (value || "").trim().toLowerCase();
-  if (v === "observe" || v === "operator" || v === "admin") {
-    return v;
+  if (v === "observe" || v === "observer" || v === "observability") {
+    return "observe";
+  }
+  if (v === "operator") {
+    return "operator";
+  }
+  if (v === "admin") {
+    return "admin";
   }
   return null;
 }

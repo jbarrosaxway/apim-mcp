@@ -36,6 +36,7 @@ import {
 import {
   authInfoFromProfile,
   getAuthScopes,
+  loadDeploymentProfile,
   loadStdioToolProfile,
   runWithAuth,
   setFallbackAuth,
@@ -475,6 +476,22 @@ class AxwayMcpServer extends McpServer {
   public async handleRequest(req: IncomingMessage, res: ServerResponse) {
     console.log(`StreamableHTTP: ${req.method} ${req.url} - Headers:`, Object.keys(req.headers));
     console.log(`StreamableHTTP: Current sessions before request: ${Object.keys(this.transports).join(', ')}`);
+
+    // Normalize Accept header so clients sending */* or missing text/event-stream don't get 406
+    const rawAccept = req.headers.accept;
+    let normalizedAccept = Array.isArray(rawAccept) ? rawAccept.join(', ') : rawAccept || '';
+    if (!normalizedAccept || normalizedAccept === '*/*') {
+      normalizedAccept = 'application/json, text/event-stream';
+    } else {
+      if (!normalizedAccept.includes('text/event-stream')) {
+        normalizedAccept = `${normalizedAccept}, text/event-stream`;
+      }
+      if (!normalizedAccept.includes('application/json')) {
+        normalizedAccept = `application/json, ${normalizedAccept}`;
+      }
+    }
+    req.headers.accept = normalizedAccept;
+
     const chunks = [];
     for await (const chunk of req) {
       chunks.push(chunk);
@@ -492,17 +509,33 @@ class AxwayMcpServer extends McpServer {
         return;
       }
       if (sessionId && !this.transports[sessionId]) {
-        console.log(`StreamableHTTP: Invalid session ID: ${sessionId}`);
-        res.writeHead(400, { 'Content-Type': 'application/json' }).end(JSON.stringify({
-          error: 'Invalid session ID',
-          message: 'The provided session ID is no longer valid. Please reinitialize the connection.'
-        }));
+        console.log(`StreamableHTTP: Adopting client-injected session ID for GET: ${sessionId}`);
+        const transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: undefined,
+        });
+        (transport as any).sessionId = sessionId;
+        (transport as any)._initialized = true;
+        await this.connect(transport);
+        res.setHeader(SESSION_ID_HEADER_NAME, sessionId);
+        this.transports[sessionId] = transport;
+        this.sessionTimestamps[sessionId] = Date.now();
+        const capturedSessionId = sessionId;
+        transport.onclose = () => {
+          delete this.transports[capturedSessionId];
+          delete this.sessionTimestamps[capturedSessionId];
+          console.log(`StreamableHTTP: Session ${capturedSessionId} closed and removed.`);
+        };
+        await transport.handleRequest(req, res);
         return;
       }
-      console.log(`StreamableHTTP: No session ID provided for GET request`);
-      res.writeHead(400, { 'Content-Type': 'application/json' }).end(JSON.stringify({
-        error: 'No session ID',
-        message: 'GET requests require a valid session ID. Please initialize the connection first.'
+      // Stateless GET without session
+      res.writeHead(405, { 'Content-Type': 'application/json' }).end(JSON.stringify({
+        jsonrpc: "2.0",
+        error: {
+          code: -32000,
+          message: "Method Not Allowed: Stateless GET requires session or use POST for JSON-RPC messages."
+        },
+        id: null
       }));
       return;
     }
@@ -512,6 +545,8 @@ class AxwayMcpServer extends McpServer {
       console.log(`StreamableHTTP: POST request received, sessionId: ${sessionId || 'none'}`);
       console.log(`StreamableHTTP: Request body:`, jsonBody ? JSON.stringify(jsonBody).substring(0, 200) + '...' : 'null');
       let transport: StreamableHTTPServerTransport;
+
+      // 1. Existing active session
       if (sessionId && this.transports[sessionId]) {
         console.log(`StreamableHTTP: Using existing session: ${sessionId}`);
         this.sessionTimestamps[sessionId] = Date.now();
@@ -519,6 +554,30 @@ class AxwayMcpServer extends McpServer {
         await transport.handleRequest(req, res, jsonBody);
         return;
       }
+
+      // 2. Client injected their own Mcp-Session-Id
+      if (sessionId && !this.transports[sessionId]) {
+        console.log(`StreamableHTTP: Adopting client-injected session ID: ${sessionId}`);
+        transport = new StreamableHTTPServerTransport({
+          sessionIdGenerator: undefined,
+        });
+        (transport as any).sessionId = sessionId;
+        (transport as any)._initialized = true;
+        await this.connect(transport);
+        res.setHeader(SESSION_ID_HEADER_NAME, sessionId);
+        this.transports[sessionId] = transport;
+        this.sessionTimestamps[sessionId] = Date.now();
+        const capturedSessionId = sessionId;
+        transport.onclose = () => {
+          delete this.transports[capturedSessionId];
+          delete this.sessionTimestamps[capturedSessionId];
+          console.log(`StreamableHTTP: Session ${capturedSessionId} closed and removed.`);
+        };
+        await transport.handleRequest(req, res, jsonBody);
+        return;
+      }
+
+      // 3. New session handshake (isInitializeRequest without session ID)
       if (!sessionId && this.isInitializeRequest(jsonBody)) {
         console.log(`StreamableHTTP: Creating new session for initialize request`);
         const generatedSessionId = randomUUID();
@@ -538,36 +597,41 @@ class AxwayMcpServer extends McpServer {
           console.log(`StreamableHTTP: New session created: ${transport.sessionId}`);
           this.transports[transport.sessionId] = transport;
           this.sessionTimestamps[transport.sessionId] = Date.now();
-          const sessionId = transport.sessionId; // Capture value for use in onclose
+          const capturedSessionId = transport.sessionId;
           transport.onclose = () => {
-            delete this.transports[sessionId];
-            delete this.sessionTimestamps[sessionId];
-            console.log(`StreamableHTTP: Session ${sessionId} closed and removed.`);
+            delete this.transports[capturedSessionId];
+            delete this.sessionTimestamps[capturedSessionId];
+            console.log(`StreamableHTTP: Session ${capturedSessionId} closed and removed.`);
           };
-          console.log(`StreamableHTTP: Session ${transport.sessionId} stored, total sessions: ${Object.keys(this.transports).length}`);
         }
         await transport.handleRequest(req, res, jsonBody);
-        console.log(`StreamableHTTP: After handleRequest, sessions: ${Object.keys(this.transports).join(', ')}`);
         return;
       }
-      if (sessionId && !this.transports[sessionId]) {
-        console.log(`StreamableHTTP: Invalid session ID for POST: ${sessionId}`);
-        res.writeHead(400, { 'Content-Type': 'application/json' }).end(JSON.stringify({
-          error: 'Invalid session ID',
-          message: 'The provided session ID is no longer valid. Please reinitialize the connection.'
-        }));
+
+      // 4. Pure Stateless request (no session ID and not initialize, e.g. tools/list directly)
+      console.log(`StreamableHTTP: Handling stateless request without session handshake`);
+      const statelessTransport = new StreamableHTTPServerTransport({
+        sessionIdGenerator: undefined,
+      });
+      await this.connect(statelessTransport);
+      await statelessTransport.handleRequest(req, res, jsonBody);
+      return;
+    }
+
+    if (req.method === 'DELETE') {
+      const sessionId = this.getSessionIdFromHeaders(req.headers);
+      if (sessionId && this.transports[sessionId]) {
+        await this.transports[sessionId].handleRequest(req, res);
+        delete this.transports[sessionId];
+        delete this.sessionTimestamps[sessionId];
         return;
       }
-      console.log(`StreamableHTTP: Invalid POST request - no session ID and not initialize`);
-      res.writeHead(400, { 'Content-Type': 'application/json' }).end(JSON.stringify({
-        error: 'Invalid request',
-        message: 'POST requests require a valid session ID or must be an initialize request.'
-      }));
+      res.writeHead(200).end();
       return;
     }
 
     console.log(`StreamableHTTP: Method not allowed: ${req.method}`);
-    res.writeHead(405, { 'Allow': 'GET, POST' }).end('Method Not Allowed');
+    res.writeHead(405, { 'Allow': 'GET, POST, DELETE' }).end('Method Not Allowed');
   }
 
   /**
@@ -906,10 +970,18 @@ async function main() {
   } else {
     // HTTP mode: web server with StreamableHTTP
     // Fail-fast if OIDC is misconfigured
-    loadAuthConfig();
+    const authConfig = loadAuthConfig();
     logAuthStartup();
-    // MCP_AUTH_MODE=none → getAuthScopes treats null as admin
-    setFallbackAuth(null);
+    if (authConfig.mode === "none") {
+      const deployProfile = loadDeploymentProfile();
+      const deployAuth = authInfoFromProfile(deployProfile, "deployment");
+      setFallbackAuth(deployAuth);
+      console.log(
+        `Axway MCP Server: auth disabled (mode=none), effective deployment profile: ${deployProfile} (${deployAuth.scopes.join(" ")})`
+      );
+    } else {
+      setFallbackAuth(null);
+    }
 
     const port = process.env.PORT || 3000;
     
